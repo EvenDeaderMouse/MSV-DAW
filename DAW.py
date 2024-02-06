@@ -9,9 +9,11 @@
 
 
 from PyQt5 import QtCore, QtGui, QtWidgets
+from Session import Session
 
 
 class Ui_MainWindow(object):
+
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.setEnabled(True)
@@ -21,32 +23,40 @@ class Ui_MainWindow(object):
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
 
-        #Layout für Toolbar -> Start, Stop und Record Button
+        # Data
+        self.session = Session(chunksize=512, sample_rate=48000)  # connects Backend
+        self.inputDevices = self.session.getInputDevices()['InputDevices']  # list of all input devices
+        self.outputDevices = self.session.getOutputDevices()['OutputDevices']  # list of all output devices
+
+        # Layout für Toolbar -> Start, Stop und Record Button
         self.horizontalLayoutWidget = QtWidgets.QWidget(self.centralwidget)
         self.horizontalLayoutWidget.setGeometry(QtCore.QRect(0, 10, 501, 80))
         self.horizontalLayoutWidget.setObjectName("horizontalLayoutWidget")
 
-        #Toolbar für Start, Stop und Record
+        # Toolbar für Start, Stop und Record
         self.toolbBar = QtWidgets.QHBoxLayout(self.horizontalLayoutWidget)
         self.toolbBar.setContentsMargins(0, 0, 0, 0)
         self.toolbBar.setObjectName("toolbBar")
 
-        #Recordbutton
+        # Recordbutton
         self.recordButton = QtWidgets.QPushButton(self.horizontalLayoutWidget)
         self.recordButton.setObjectName("recordButton")
         self.toolbBar.addWidget(self.recordButton)
+        # self.recordButton calls -> self.session.record(), when pressed
 
-        #StopButton
+        # StopButton
         self.stopButton = QtWidgets.QPushButton(self.horizontalLayoutWidget)
         self.stopButton.setObjectName("stopButton")
         self.toolbBar.addWidget(self.stopButton)
+        # self.stopButton calls -> self.session.stop()
 
-        #PlayButton
+        # PlayButton
         self.playButton = QtWidgets.QPushButton(self.horizontalLayoutWidget)
         self.playButton.setObjectName("playButton")
         self.toolbBar.addWidget(self.playButton)
+        # self.playButton calls -> self.session.play(), when pressed
 
-        #Area für Effekte
+        # Area für Effekte
         self.effectArea = QtWidgets.QScrollArea(self.centralwidget)
         self.effectArea.setGeometry(QtCore.QRect(10, 100, 241, 461))
         self.effectArea.setWidgetResizable(True)
@@ -59,7 +69,7 @@ class Ui_MainWindow(object):
         self.verticalScrollBar.setOrientation(QtCore.Qt.Vertical)
         self.verticalScrollBar.setObjectName("verticalScrollBar")
 
-        #Reverb
+        # Reverb
         self.reverbBox = QtWidgets.QGroupBox(self.scrollAreaWidgetContents)
         self.reverbBox.setGeometry(QtCore.QRect(10, 10, 201, 171))
         self.reverbBox.setTitle("")
@@ -68,43 +78,43 @@ class Ui_MainWindow(object):
         self.reverbLabel.setGeometry(QtCore.QRect(10, 10, 121, 21))
         self.reverbLabel.setObjectName("reverbLabel")
 
-        #Reverb - Repeatdial
+        # Reverb - Repeatdial
         self.repeat = QtWidgets.QDial(self.reverbBox)
         self.repeat.setGeometry(QtCore.QRect(150, 130, 31, 31))
         self.repeat.setMaximum(10)
         self.repeat.setObjectName("repeat")
 
-        #Reverb - LowPassdial
+        # Reverb - LowPassdial
         self.lowPass = QtWidgets.QDial(self.reverbBox)
         self.lowPass.setGeometry(QtCore.QRect(80, 130, 31, 31))
         self.lowPass.setMaximum(22)
         self.lowPass.setObjectName("lowPass")
 
-        #Reverb - HighPassdial
+        # Reverb - HighPassdial
         self.highPass = QtWidgets.QDial(self.reverbBox)
         self.highPass.setGeometry(QtCore.QRect(10, 130, 31, 31))
         self.highPass.setMaximum(22)
         self.highPass.setObjectName("highPass")
 
-        #Reverb - ELeveldial
+        # Reverb - ELeveldial
         self.elevel = QtWidgets.QDial(self.reverbBox)
         self.elevel.setGeometry(QtCore.QRect(10, 70, 31, 31))
         self.elevel.setMaximum(100)
         self.elevel.setObjectName("elevel")
 
-        #Reverb - PreDelaydial
+        # Reverb - PreDelaydial
         self.preDelay = QtWidgets.QDial(self.reverbBox)
         self.preDelay.setGeometry(QtCore.QRect(80, 70, 31, 31))
         self.preDelay.setMaximum(100)
         self.preDelay.setObjectName("preDelay")
 
-        #Reverb - Delaydial
+        # Reverb - Delaydial
         self.delay = QtWidgets.QDial(self.reverbBox)
         self.delay.setGeometry(QtCore.QRect(150, 70, 31, 31))
         self.delay.setMaximum(100)
         self.delay.setObjectName("delay")
 
-        #Label für Dials
+        # Label für Dials
         self.label_6 = QtWidgets.QLabel(self.reverbBox)
         self.label_6.setGeometry(QtCore.QRect(10, 110, 51, 16))
         self.label_6.setObjectName("label_6")
@@ -124,7 +134,7 @@ class Ui_MainWindow(object):
         self.label_11.setGeometry(QtCore.QRect(140, 50, 41, 16))
         self.label_11.setObjectName("label_11")
 
-        #Distortion
+        # Distortion
         self.distortionBox = QtWidgets.QGroupBox(self.scrollAreaWidgetContents)
         self.distortionBox.setGeometry(QtCore.QRect(10, 200, 171, 111))
         self.distortionBox.setTitle("")
@@ -133,25 +143,25 @@ class Ui_MainWindow(object):
         self.distortionLabel.setGeometry(QtCore.QRect(10, 10, 151, 16))
         self.distortionLabel.setObjectName("distortionLabel")
 
-        #Distortion - Drivedial
+        # Distortion - Drivedial
         self.drive = QtWidgets.QDial(self.distortionBox)
         self.drive.setGeometry(QtCore.QRect(10, 70, 31, 31))
         self.drive.setMaximum(100)
         self.drive.setObjectName("drive")
 
-        #Distortion - ELeveldial
+        # Distortion - ELeveldial
         self.elevel_3 = QtWidgets.QDial(self.distortionBox)
         self.elevel_3.setGeometry(QtCore.QRect(60, 70, 31, 31))
         self.elevel_3.setMaximum(100)
         self.elevel_3.setObjectName("elevel_3")
 
-        #Distortion - Volumedial
+        # Distortion - Volumedial
         self.volume = QtWidgets.QDial(self.distortionBox)
         self.volume.setGeometry(QtCore.QRect(110, 70, 31, 31))
         self.volume.setMaximum(100)
         self.volume.setObjectName("volume")
 
-        #Distortion - Labels
+        # Distortion - Labels
         self.label = QtWidgets.QLabel(self.distortionBox)
         self.label.setGeometry(QtCore.QRect(10, 50, 41, 16))
         self.label.setObjectName("label")
@@ -162,7 +172,7 @@ class Ui_MainWindow(object):
         self.label_3.setGeometry(QtCore.QRect(110, 50, 51, 16))
         self.label_3.setObjectName("label_3")
 
-        #Delay
+        # Delay
         self.delayBox = QtWidgets.QGroupBox(self.scrollAreaWidgetContents)
         self.delayBox.setGeometry(QtCore.QRect(10, 340, 171, 101))
         self.delayBox.setTitle("")
@@ -171,19 +181,19 @@ class Ui_MainWindow(object):
         self.delayLabel.setGeometry(QtCore.QRect(10, 10, 151, 16))
         self.delayLabel.setObjectName("delayLabel")
 
-        #Delay - Delaydial
+        # Delay - Delaydial
         self.delayDelay = QtWidgets.QDial(self.delayBox)
         self.delayDelay.setGeometry(QtCore.QRect(10, 60, 31, 31))
         self.delayDelay.setMaximum(100)
         self.delayDelay.setObjectName("delayDelay")
 
-        #Delay - ELevelDelayDial
+        # Delay - ELevelDelayDial
         self.elevelDelay = QtWidgets.QDial(self.delayBox)
         self.elevelDelay.setGeometry(QtCore.QRect(120, 60, 31, 31))
         self.elevelDelay.setMaximum(100)
         self.elevelDelay.setObjectName("elevelDelay")
 
-        #Delaylabels
+        # Delaylabels
         self.label_4 = QtWidgets.QLabel(self.delayBox)
         self.label_4.setGeometry(QtCore.QRect(10, 40, 51, 16))
         self.label_4.setObjectName("label_4")
@@ -192,7 +202,7 @@ class Ui_MainWindow(object):
         self.label_5.setObjectName("label_5")
         self.effectArea.setWidget(self.scrollAreaWidgetContents)
 
-        #Trackbox
+        # Trackbox
         self.trackBox = QtWidgets.QScrollArea(self.centralwidget)
         self.trackBox.setGeometry(QtCore.QRect(250, 100, 691, 461))
         self.trackBox.setWidgetResizable(True)
@@ -209,18 +219,18 @@ class Ui_MainWindow(object):
         self.horizontalScrollBar.setOrientation(QtCore.Qt.Horizontal)
         self.horizontalScrollBar.setObjectName("horizontalScrollBar")
 
-        #Track1
+        # Track1
         self.track1 = QtWidgets.QGroupBox(self.scrollAreaWidgetContents_2)
         self.track1.setGeometry(QtCore.QRect(10, 10, 581, 121))
         self.track1.setTitle("")
         self.track1.setObjectName("track1")
 
-        #Track1 - Grafik
+        # Track1 - Grafik
         self.trackGraphic = QtWidgets.QGraphicsView(self.track1)
         self.trackGraphic.setGeometry(QtCore.QRect(110, 10, 451, 101))
         self.trackGraphic.setObjectName("trackGraphic")
 
-        #Track 1 - Volume
+        # Track 1 - Volume
         self.track1Volume = QtWidgets.QSlider(self.track1)
         self.track1Volume.setGeometry(QtCore.QRect(0, 80, 101, 20))
         self.track1Volume.setOrientation(QtCore.Qt.Horizontal)
@@ -230,7 +240,6 @@ class Ui_MainWindow(object):
         self.track1Label.setObjectName("track1Label")
         self.trackBox.setWidget(self.scrollAreaWidgetContents_2)
 
-        
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 943, 18))
@@ -240,8 +249,26 @@ class Ui_MainWindow(object):
         self.statusbar.setObjectName("statusbar")
         MainWindow.setStatusBar(self.statusbar)
 
+        # Button for playing while recording -> varname "solo": Bool I/O
+
+        # Dynamic dropdown list for input and output device
+        # get Data from session_instance.getInputDevices()
+        # and
+        # session_instance.getOutputDevices()
+
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
+
+    def createNewTrack(self):
+        # get first Free Track num -> this class needs a object keeping score of all available tracks
+        # creates new Track under last one in box
+        # returns trackname/-num
+        return 2  # later trackNum or Name
+
+    def deleteTrack(self, trackNum):
+        # session instance.deleteTrack(self, trackNum)
+        # remove all UI elements with TrackNum
+        return True
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
@@ -265,8 +292,10 @@ class Ui_MainWindow(object):
         self.label_5.setText(_translate("MainWindow", "elevel"))
         self.track1Label.setText(_translate("MainWindow", "Track 1"))
 
+
 if __name__ == "__main__":
     import sys
+
     app = QtWidgets.QApplication(sys.argv)
     DAW = QtWidgets.QMainWindow()
     ui = Ui_MainWindow()
