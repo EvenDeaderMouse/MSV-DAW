@@ -28,6 +28,7 @@ class Ui_MainWindow(object):
         self.inputDevices = self.session.getInputDevices()['InputDevices']  # list of all input devices
         self.outputDevices = self.session.getOutputDevices()['OutputDevices']  # list of all output devices
 
+
         # Layout für Toolbar -> Start, Stop und Record Button
         self.horizontalLayoutWidget = QtWidgets.QWidget(self.centralwidget)
         self.horizontalLayoutWidget.setGeometry(QtCore.QRect(0, 10, 501, 80))
@@ -225,6 +226,7 @@ class Ui_MainWindow(object):
         self.track1.setTitle("")
         self.track1.setObjectName("track1")
 
+
         # Track1 - Grafik
         self.trackGraphic = QtWidgets.QGraphicsView(self.track1)
         self.trackGraphic.setGeometry(QtCore.QRect(110, 10, 451, 101))
@@ -266,7 +268,7 @@ class Ui_MainWindow(object):
         return 2  # later trackNum or Name
 
     def deleteTrack(self, trackNum):
-        # session instance.deleteTrack(self, trackNum)
+        # self.session.deleteTrack(self, trackNum)
         # remove all UI elements with TrackNum
         return True
 

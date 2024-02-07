@@ -23,27 +23,27 @@ class Session(object):
         self.STATE = States.PAUSED
         self.tempFilePointerDict: dict = {}
         self.cDir: str = os.getcwd()
+        self.pyAudio = pyaudio.PyAudio()  # create one
         self.activeInput: dict = dict(self.getInputDevices()['dInput'])  # take default machine input device
         self.activeOutput: dict = dict(self.getOutputDevices()['dOutput'])
         self.inputCHANNELS: int = self.activeInput["maxInputChannels"]
-        self.pyaudio = pyaudio.PyAudio()  # create one
         self.BPM: int = 100
 
     def getInputDevices(self):
         inputDevices = {}
-        for i in range(0, self.pyaudio.get_device_count()):
-            device = self.pyaudio.get_device_info_by_index(i)
+        for i in range(0, self.pyAudio.get_device_count()):
+            device = self.pyAudio.get_device_info_by_index(i)
             if device["maxInputChannels"] > 0:
                 inputDevices.update({device["name"]: device})
-        return {"dInput": self.pyaudio.get_default_input_device_info(), "InputDevices": inputDevices}
+        return {"dInput": self.pyAudio.get_default_input_device_info(), "InputDevices": inputDevices}
 
     def getOutputDevices(self):
         outputDevices = {}
-        for i in range(0, self.pyaudio.get_device_count()):
-            device = self.pyaudio.get_device_info_by_index(i)
+        for i in range(0, self.pyAudio.get_device_count()):
+            device = self.pyAudio.get_device_info_by_index(i)
             if device["maxOutputChannels"] > 0:
                 outputDevices.update({device["name"]: device})
-        return {"dOutput": self.pyaudio.get_default_output_device_info(), "OutputDevices": outputDevices}
+        return {"dOutput": self.pyAudio.get_default_output_device_info(), "OutputDevices": outputDevices}
 
     def play(self):  # button functionality and logic
         if self.STATE != States.PLAYING:
@@ -71,7 +71,7 @@ class Session(object):
 
     def playback(self, wavFile):  # actual playback of audio stream or maybe this needs to return stream class obj
         wave_Read = wave.open(wavFile, 'rb')
-        stream = self.pyaudio.open(format=self.AUDFORMAT,
+        stream = self.pyAudio.open(format=self.AUDFORMAT,
                                    channels=self.inputCHANNELS,
                                    rate=self.SAMPLE_RATE,
                                    input=False,
@@ -111,7 +111,7 @@ class Session(object):
         record.join()
     """
 
-    def record(self):
+    def record(self):#effect arg or ui abfrage
         if self.activeOutput != None and self.activeInput != None and self.inputCHANNELS != None:
             if self.STATE != States.RECORDING:
                 self.setSTATE(States.RECORDING)
@@ -122,7 +122,7 @@ class Session(object):
                 time.sleep(1 * (self.BPM / 100))
                 print("Recording in 1...")
                 time.sleep(1 * (self.BPM / 100))
-                stream = self.pyaudio.open(format=self.AUDFORMAT,
+                stream = self.pyAudio.open(format=self.AUDFORMAT,
                                            channels=self.inputCHANNELS,
                                            rate=self.SAMPLE_RATE,
                                            input=True,
@@ -197,7 +197,7 @@ class Session(object):
         return self.inputCHANNELS
 
     def getPyAudio(self):
-        return self.pyaudio
+        return self.pyAudio
 
     def getBPM(self):
         return self.BPM
@@ -245,7 +245,7 @@ class Session(object):
         self.inputCHANNELS = inputCHANNELS
 
     def setPyAudio(self, pyaudio:pyaudio.PyAudio):
-        self.pyaudio = pyaudio
+        self.pyAudio = pyaudio
 
     def setBPM(self, BPM:int):
         self.BPM = BPM
