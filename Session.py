@@ -9,6 +9,7 @@ from multiprocessing import Process
 from enum import Enum
 
 
+
 class States(Enum):
     PAUSED = 'PAUSED'
     RECORDING = 'RECORDING'

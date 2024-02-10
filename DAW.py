@@ -9,7 +9,7 @@
 
 
 from PyQt5 import QtCore, QtGui, QtWidgets
-from Session import Session
+from Session import Session, States
 
 
 class Ui_MainWindow(object):
