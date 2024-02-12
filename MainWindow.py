@@ -1,6 +1,7 @@
 from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton
 from PyQt5.QtCore import QObject, pyqtSlot
 
+
 # Importieren Sie Ihre GUI-Klasse aus der generierten Datei
 from DAW import Ui_MainWindow
 
@@ -36,13 +37,14 @@ class MainWindow(QMainWindow):
 
     # Methoden, die auf Benutzeraktionen reagieren
     def startRecording(self):
-        self.session.record()
+        self.session.record_buttonpress()
 
     def stopRecording(self):
-        self.session.stop()
+        self.session.stop_buttonpress()
 
     def playRecording(self):
-        self.session.play()
+        self.session.play_buttonpress()
+
 
 if __name__ == "__main__":
     import sys

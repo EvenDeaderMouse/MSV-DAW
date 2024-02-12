@@ -55,7 +55,7 @@ class Ui_MainWindow(object):
         self.playButton = QtWidgets.QPushButton(self.horizontalLayoutWidget)
         self.playButton.setObjectName("playButton")
         self.toolbBar.addWidget(self.playButton)
-        # self.playButton calls -> self.session.play(), when pressed
+        #self.playButton calls -> self.session.play(), when pressed
 
         # Area für Effekte
         self.effectArea = QtWidgets.QScrollArea(self.centralwidget)

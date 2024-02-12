@@ -7,7 +7,7 @@ import os
 import EffectUtil
 from multiprocessing import Process
 from enum import Enum
-
+from threading import Thread
 
 
 class States(Enum):
@@ -17,7 +17,7 @@ class States(Enum):
 
 
 class Session(object):
-    def __init__(self, chunksize=512, audformat=pyaudio.paInt16, sample_rate=48000):
+    def __init__(self, chunksize=512, audformat=pyaudio.paInt16, sample_rate=44100):
         self.CHUNKSIZE: int = chunksize
         self.AUDFORMAT = audformat
         self.SAMPLE_RATE: int = sample_rate
@@ -28,7 +28,9 @@ class Session(object):
         self.activeInput: dict = dict(self.getInputDevices()['dInput'])  # take default machine input device
         self.activeOutput: dict = dict(self.getOutputDevices()['dOutput'])
         self.inputCHANNELS: int = self.activeInput["maxInputChannels"]
-        self.BPM: int = 100
+        self.outputCHANNELS: int = self.activeOutput["maxOutputChannels"]
+        self.BPM: int = 60
+        self.temptrack = 0  ##Testing delete
 
     def getInputDevices(self):
         inputDevices = {}
@@ -46,48 +48,41 @@ class Session(object):
                 outputDevices.update({device["name"]: device})
         return {"dOutput": self.pyAudio.get_default_output_device_info(), "OutputDevices": outputDevices}
 
-    def play(self):  # button functionality and logic
+    def play_buttonpress(self):  # button functionality and logic
         if self.STATE != States.PLAYING:
             if self.STATE == States.PAUSED:
                 self.setSTATE(States.PLAYING)
+
             # maybe extrude this into async function and await all streams back
             playbackStreams = []
             for entry in self.tempFilePointerDict:
-                playbackStreams.append(Process(target=self.playback(entry)))
+                playbackStreams.append(Process(target=self.playback, args=(self.tempFilePointerDict[entry],)))
             ####
             print("Playing in 3...")
-            time.sleep(1 * (self.BPM / 100))
+            time.sleep(1 * (60 / self.BPM))
             print("Playing in 2...")
-            time.sleep(1 * (self.BPM / 100))
+            time.sleep(1 * (60 / self.BPM))
             print("Playing in 1...")
-            time.sleep(1 * (self.BPM / 100))
+            time.sleep(1 * (60 / self.BPM))
             for entry in playbackStreams:
                 entry.start()
-                entry.join()
-
-            # open stream with self.Values
-            # while not paused and stream != '': play recording
         else:
-            self.stop()
+            self.stop_buttonpress()
 
     def playback(self, wavFile):  # actual playback of audio stream or maybe this needs to return stream class obj
         wave_Read = wave.open(wavFile, 'rb')
-        stream = self.pyAudio.open(format=self.AUDFORMAT,
-                                   channels=self.inputCHANNELS,
-                                   rate=self.SAMPLE_RATE,
-                                   input=False,
+        p = pyaudio.PyAudio()
+        stream = p.open(format=self.pyAudio.get_format_from_width(wave_Read.getsampwidth()),
+                                   channels=wave_Read.getnchannels(),
+                                   rate=wave_Read.getframerate(),
                                    output=True,
-                                   frames_per_buffer=self.CHUNKSIZE,
-                                   output_device_index=self.activeOutput["index"],
-                                   )
+                                   frames_per_buffer=self.CHUNKSIZE)
 
         print("* playing")
 
-        while self.STATE != States.PAUSED:
-            data = wave_Read.readframes(self.CHUNKSIZE)
-            while data:
-                stream.write(data)
-                data = wave_Read.readframes(self.CHUNKSIZE)
+        # while self.STATE != States.PAUSED:
+        while len(data := wave_Read.readframes(self.CHUNKSIZE)):
+            stream.write(data)
 
         print("* end playback")
         self.setSTATE(States.PAUSED)
@@ -96,72 +91,69 @@ class Session(object):
         stream.stop_stream()
         stream.close()
 
-    def stop(self):
+    def stop_buttonpress(self):
+        print("DAW stopped")
         self.setSTATE(States.PAUSED)
 
-    """
-    for simuplay:
-        if not solo:
-            play = Process(target=session.play())
-            play.start()
-            
-        record = Process(target=session.record())
-        record.start()
-        
-        play.join()
-        record.join()
-    """
-
-    def record(self):#effect arg or ui abfrage
+    def record_buttonpress(self, solo=True):  # effect arg or ui abfrage
         if self.activeOutput != None and self.activeInput != None and self.inputCHANNELS != None:
             if self.STATE != States.RECORDING:
                 self.setSTATE(States.RECORDING)
-                # newTrack = createNewTrack()->returns num/name
-                print("Recording in 3...")
-                time.sleep(1 * (self.BPM / 100))
-                print("Recording in 2...")
-                time.sleep(1 * (self.BPM / 100))
-                print("Recording in 1...")
-                time.sleep(1 * (self.BPM / 100))
-                stream = self.pyAudio.open(format=self.AUDFORMAT,
-                                           channels=self.inputCHANNELS,
-                                           rate=self.SAMPLE_RATE,
-                                           input=True,
-                                           output=True,
-                                           frames_per_buffer=self.CHUNKSIZE,
-                                           input_device_index=self.activeInput["index"],
-                                           output_device_index=self.activeOutput["index"])
-
-                print("* recording")
-
-                tempFile = []
-                while self.STATE != States.PAUSED:
-                    data = stream.read(self.CHUNKSIZE)
-                    # data += effects
-                    tempFile.append(data)
-                    # newTrack.updateGraph(tempFile)
-
-                print("* end recording")
-                self.setSTATE(States.PAUSED)
-
-                stream.stop_stream()
-                stream.close()
-
-                WAVE_OUTPUT_TEMP_FILENAME = str(datetime.now()) + ".wav"
-
-                wf = wave.open(WAVE_OUTPUT_TEMP_FILENAME, 'wb')
-                wf.setnchannels(self.inputCHANNELS)
-                wf.setsampwidth(pyaudio.get_sample_size(self.AUDFORMAT))
-                wf.setframerate(self.SAMPLE_RATE)
-                wf.writeframes(b''.join(tempFile))
-                wf.close()
-                self.tempFilePointerDict.update({'newTrack.Num': WAVE_OUTPUT_TEMP_FILENAME + ".wav"})
+                recording = Thread(target=self.record, daemon=True)
+                if not solo:
+                    play_stream = Thread(target=self.play_buttonpress, daemon=True)
+                    play_stream.start()
+                recording.start()
             else:
-                self.stop()
-                self.record()
+                self.stop_buttonpress()
+                time.sleep(1)
+                self.record_buttonpress(solo)
         else:
             # errorhandling
             pass
+
+    def record(self):
+        # newTrack = createNewTrack()->returns num/name
+        print("Recording in 3...")
+        time.sleep(1 * (60 / self.BPM))
+        print("Recording in 2...")
+        time.sleep(1 * (60 / self.BPM))
+        print("Recording in 1...")
+        time.sleep(1 * (60 / self.BPM))
+        stream = self.pyAudio.open(format=self.AUDFORMAT,
+                                   channels=self.inputCHANNELS,
+                                   rate=self.SAMPLE_RATE,
+                                   input=True,
+                                   output=True,
+                                   frames_per_buffer=self.CHUNKSIZE,
+                                   input_device_index=self.activeInput["index"])
+
+        print("* recording")
+
+        tempFile = []
+        while self.STATE != States.PAUSED:
+            data = stream.read(self.CHUNKSIZE)
+            # data += effects
+            tempFile.append(data)
+            # newTrack.updateGraph(tempFile)
+
+        print("* end recording")
+        self.setSTATE(States.PAUSED)
+
+        stream.stop_stream()
+        stream.close()
+
+        WAVE_OUTPUT_TEMP_FILENAME = str(datetime.now()).replace(":", "-") + ".wav"
+        wf = wave.open(WAVE_OUTPUT_TEMP_FILENAME, 'wb')
+        wf.setnchannels(self.inputCHANNELS)
+        wf.setsampwidth(pyaudio.get_sample_size(self.AUDFORMAT))
+        wf.setframerate(self.SAMPLE_RATE)
+        wf.writeframes(b''.join(tempFile))
+        wf.close()
+        a = self.getOutputDevices()
+        self.tempFilePointerDict.update({self.temptrack: WAVE_OUTPUT_TEMP_FILENAME})#WIP
+        self.temptrack += 1
+
 
     def deleteTrack(self, trackNum):
         try:
@@ -245,10 +237,13 @@ class Session(object):
     def setInputCHANNELS(self, inputCHANNELS):
         self.inputCHANNELS = inputCHANNELS
 
-    def setPyAudio(self, pyaudio:pyaudio.PyAudio):
+    def setOutputCHANNELS(self, outputCHANNELS):
+        self.outputCHANNELS = outputCHANNELS
+
+    def setPyAudio(self, pyaudio: pyaudio.PyAudio):
         self.pyAudio = pyaudio
 
-    def setBPM(self, BPM:int):
+    def setBPM(self, BPM: int):
         self.BPM = BPM
 
 
