@@ -1,3 +1,5 @@
+import struct
+
 import numpy as np
 import pyaudio
 import wave
@@ -10,6 +12,7 @@ from enum import Enum
 from threading import Thread
 
 
+
 class States(Enum):
     PAUSED = 'PAUSED'
     RECORDING = 'RECORDING'
@@ -17,8 +20,9 @@ class States(Enum):
 
 
 class Session(object):
-    def __init__(self, chunksize=512, audformat=pyaudio.paInt16, sample_rate=44100):
-        self.CHUNKSIZE: int = chunksize
+    def __init__(self, interface, chunksize=512, audformat=pyaudio.paInt16, sample_rate=48000):
+        self.INTERFACE = interface
+        self.CHUNK_SIZE: int = chunksize
         self.AUDFORMAT = audformat
         self.SAMPLE_RATE: int = sample_rate
         self.STATE = States.PAUSED
@@ -30,7 +34,8 @@ class Session(object):
         self.inputCHANNELS: int = self.activeInput["maxInputChannels"]
         self.outputCHANNELS: int = self.activeOutput["maxOutputChannels"]
         self.BPM: int = 60
-        self.temptrack = 0  ##Testing delete
+        self.effects: dict = {}
+        self.temptrack = 0  ##Testing; delete
 
     def getInputDevices(self):
         inputDevices = {}
@@ -73,15 +78,15 @@ class Session(object):
         wave_Read = wave.open(wavFile, 'rb')
         p = pyaudio.PyAudio()
         stream = p.open(format=self.pyAudio.get_format_from_width(wave_Read.getsampwidth()),
-                                   channels=wave_Read.getnchannels(),
-                                   rate=wave_Read.getframerate(),
-                                   output=True,
-                                   frames_per_buffer=self.CHUNKSIZE)
+                        channels=wave_Read.getnchannels(),
+                        rate=wave_Read.getframerate(),
+                        output=True,
+                        frames_per_buffer=self.CHUNK_SIZE)
 
         print("* playing")
 
         # while self.STATE != States.PAUSED:
-        while len(data := wave_Read.readframes(self.CHUNKSIZE)):
+        while len(data := wave_Read.readframes(self.CHUNK_SIZE)):
             stream.write(data)
 
         print("* end playback")
@@ -95,45 +100,47 @@ class Session(object):
         print("DAW stopped")
         self.setSTATE(States.PAUSED)
 
-    def record_buttonpress(self, solo=True):  # effect arg or ui abfrage
+    def record_buttonpress(self):  # effect arg or ui abfrage
         if self.activeOutput != None and self.activeInput != None and self.inputCHANNELS != None:
             if self.STATE != States.RECORDING:
                 self.setSTATE(States.RECORDING)
+                self.effects = self.INTERFACE.getAllEffectVal()
                 recording = Thread(target=self.record, daemon=True)
-                if not solo:
+                if not self.INTERFACE.getSoloVal():
                     play_stream = Thread(target=self.play_buttonpress, daemon=True)
                     play_stream.start()
                 recording.start()
             else:
                 self.stop_buttonpress()
                 time.sleep(1)
-                self.record_buttonpress(solo)
+                self.record_buttonpress()
         else:
             # errorhandling
             pass
 
     def record(self):
         # newTrack = createNewTrack()->returns num/name
+
         print("Recording in 3...")
         time.sleep(1 * (60 / self.BPM))
         print("Recording in 2...")
         time.sleep(1 * (60 / self.BPM))
         print("Recording in 1...")
         time.sleep(1 * (60 / self.BPM))
-        stream = self.pyAudio.open(format=self.AUDFORMAT,
+        stream = self.pyAudio.open(format=pyaudio.paInt16,
                                    channels=self.inputCHANNELS,
                                    rate=self.SAMPLE_RATE,
                                    input=True,
                                    output=True,
-                                   frames_per_buffer=self.CHUNKSIZE,
+                                   frames_per_buffer=self.CHUNK_SIZE,
                                    input_device_index=self.activeInput["index"])
 
         print("* recording")
 
         tempFile = []
         while self.STATE != States.PAUSED:
-            data = stream.read(self.CHUNKSIZE)
-            # data += effects
+            data = stream.read(self.CHUNK_SIZE)
+            #data = self.applyEffects(np.fromstring(data, np.float32))
             tempFile.append(data)
             # newTrack.updateGraph(tempFile)
 
@@ -151,9 +158,25 @@ class Session(object):
         wf.writeframes(b''.join(tempFile))
         wf.close()
         a = self.getOutputDevices()
-        self.tempFilePointerDict.update({self.temptrack: WAVE_OUTPUT_TEMP_FILENAME})#WIP
-        self.temptrack += 1
+        self.tempFilePointerDict.update(
+            {self.temptrack: WAVE_OUTPUT_TEMP_FILENAME})  # TESTING ONLY;change/delte: self.temptrack
+        self.temptrack += 1  # delete after testing
 
+    def applyEffects(self, data):
+        for effect in self.effects:
+            match effect:
+                case "reverb":
+                    data = EffectUtil.reverb(wave=data, samplerate=self.SAMPLE_RATE,
+                                             elevel=self.effects[effect]["eLevel"],
+                                             predelay=self.effects[effect]["eLevel"], delay=self.effects[effect]["eLevel"],
+                                             lowpass=self.effects[effect]["eLevel"],highpass=self.effects[effect]["eLevel"],
+                                             repeat=self.effects[effect]["eLevel"], length=0)
+                case "distorion":
+                    data = EffectUtil.distortSignal(wave=data, drive=self.effects[effect]["drive"], level=self.effects[effect]["eLevel"],
+                                                    volume=self.effects[effect]["volume"])
+                case "delay":
+                    data = EffectUtil.delay(wave=data, elevel=self.effects[effect]["eLevel"], delay=self.effects[effect]["delay"])
+        return data
 
     def deleteTrack(self, trackNum):
         try:
@@ -163,7 +186,7 @@ class Session(object):
 
     # getter
     def getCHUNKSIZE(self):
-        return self.CHUNKSIZE
+        return self.CHUNK_SIZE
 
     def getAUDFORMAT(self):
         return self.AUDFORMAT
@@ -197,7 +220,7 @@ class Session(object):
 
     # setter
     def setCHUNKSIZE(self, chunksize):
-        self.CHUNKSIZE = chunksize
+        self.CHUNK_SIZE = chunksize
 
     def setAUDFORMAT(self, audformat):
         self.AUDFORMAT = audformat

@@ -24,7 +24,7 @@ class Ui_MainWindow(object):
         self.centralwidget.setObjectName("centralwidget")
 
         # Data
-        self.session = Session(chunksize=512, sample_rate=48000)  # connects Backend
+        self.session = Session(self, chunksize=512, sample_rate=48000)  # connects Backend
         self.inputDevices = self.session.getInputDevices()['InputDevices']  # list of all input devices
         self.outputDevices = self.session.getOutputDevices()['OutputDevices']  # list of all output devices
 
@@ -43,18 +43,21 @@ class Ui_MainWindow(object):
         self.recordButton = QtWidgets.QPushButton(self.horizontalLayoutWidget)
         self.recordButton.setObjectName("recordButton")
         self.toolbBar.addWidget(self.recordButton)
+        self.recordButton.clicked.connect(self.session.record_buttonpress)
         # self.recordButton calls -> self.session.record(), when pressed
 
         # StopButton
         self.stopButton = QtWidgets.QPushButton(self.horizontalLayoutWidget)
         self.stopButton.setObjectName("stopButton")
         self.toolbBar.addWidget(self.stopButton)
-        # self.stopButton calls -> self.session.stop()
+        self.stopButton.clicked.connect(self.session.stop_buttonpress)
+        # self.stopButton calls -> self.session.stop
 
         # PlayButton
         self.playButton = QtWidgets.QPushButton(self.horizontalLayoutWidget)
         self.playButton.setObjectName("playButton")
         self.toolbBar.addWidget(self.playButton)
+        self.playButton.clicked.connect(self.session.play_buttonpress)
         #self.playButton calls -> self.session.play(), when pressed
 
         # Area für Effekte
@@ -294,6 +297,38 @@ class Ui_MainWindow(object):
         self.label_5.setText(_translate("MainWindow", "elevel"))
         self.track1Label.setText(_translate("MainWindow", "Track 1"))
 
+    def getAllEffectVal(self):
+        effectVals = {}
+        effectVals.update({"reverb": self.getReverbVal()})
+        effectVals.update({"distortion": self.getDistortionVal()})
+        effectVals.update({"delay": self.getDelayVal()})
+        return effectVals
+
+    def getReverbVal(self):
+        reverbVal = {}
+        reverbVal.update({"eLevel": self.elevel.value()})
+        reverbVal.update({"preDelay": self.preDelay.value()})
+        reverbVal.update({"delay": self.delay.value()})
+        reverbVal.update({"highPass": self.highPass.value()})
+        reverbVal.update({"lowPass": self.lowPass.value()})
+        reverbVal.update({"repeat": self.repeat.value()})
+        return reverbVal
+
+    def getDistortionVal(self):
+        distortionVal = {}
+        distortionVal.update({"eLevel": self.elevel_3.value()})
+        distortionVal.update({"drive": self.drive.value()})
+        distortionVal.update({"volume": self.volume.value()})
+        return distortionVal
+
+    def getDelayVal(self):
+        delayVal = {}
+        delayVal.update({"eLevel": self.elevelDelay.value()})
+        delayVal.update({"delay": self.delayDelay.value()})
+        return delayVal
+
+    def getSoloVal(self):
+        return True #self.solo.value()
 
 if __name__ == "__main__":
     import sys

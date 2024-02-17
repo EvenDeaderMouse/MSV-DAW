@@ -16,34 +16,6 @@ class MainWindow(QMainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
 
-        # Initialisieren der Session
-        self.session = Session()
-
-        # Verbindung der Schaltflächen mit Methoden
-        self.ui.recordButton.clicked.connect(self.startRecording)
-        self.ui.stopButton.clicked.connect(self.stopRecording)
-        self.ui.playButton.clicked.connect(self.playRecording)
-
-        # Methode, um die Aufnahme zu starten oder zu stoppen
-
-    def toggleRecording(self):
-        if self.session.getSTATE() == States.RECORDING:
-            self.session.stop()
-        else:
-            if self.session.getSTATE() != States.PLAYING:  # Überprüfen, ob bereits eine Aufnahme oder Wiedergabe läuft
-                self.session.record()
-            else:
-                print("Not reacting")  # Hinweis geben, dass das Programm nicht reagiert
-
-    # Methoden, die auf Benutzeraktionen reagieren
-    def startRecording(self):
-        self.session.record_buttonpress()
-
-    def stopRecording(self):
-        self.session.stop_buttonpress()
-
-    def playRecording(self):
-        self.session.play_buttonpress()
 
 
 if __name__ == "__main__":
