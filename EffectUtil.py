@@ -86,13 +86,12 @@ def reverbResponse(wave, samplerate, elevel=0.5, predelay=0., delay=0., lowpass=
 def reverb(wave, samplerate, elevel=0.5, predelay=0.1, delay=0.1, lowpass=22000, highpass=0, repeat=1, length=0):
     responses = []
     for i in range(1, repeat + 1):
-        responses.append(reverbResponse(wave, elevel, predelay * i, delay * i, lowpass, highpass))
-    try:
-        wave = wave * (0.9 - elevel)
-        # apply effect level
-        # v2.0 with 1-elevel there is a clipping issue -> needs filter
-    except RuntimeWarning:
-        print("value error")
+        responses.append(
+            reverbResponse(wave, samplerate=samplerate, elevel=elevel, predelay=predelay * i, delay=delay * i,
+                           lowpass=lowpass, highpass=highpass))
+    wave = wave * (0.9 - elevel)
+    # apply effect level
+    # v2.0 with 1-elevel there is a clipping issue -> needs filter
     addedWaves = addWaves(wave, responses)
     if length > 0:
         addedWaves = cutWave(addedWaves, length, samplerate)

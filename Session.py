@@ -1,5 +1,3 @@
-import struct
-
 import numpy as np
 import pyaudio
 import wave
@@ -7,10 +5,11 @@ import time
 from datetime import datetime
 import os
 import EffectUtil
-from multiprocessing import Process
 from enum import Enum
 from threading import Thread
 
+
+# from DAW import Ui_MainWindow
 
 
 class States(Enum):
@@ -20,9 +19,8 @@ class States(Enum):
 
 
 class Session(object):
-    def __init__(self, interface, chunksize=512, audformat=pyaudio.paInt16, sample_rate=48000):
-        self.INTERFACE = interface
-        self.CHUNK_SIZE: int = chunksize
+    def __init__(self, ui=None, chunk_size=512, audformat=pyaudio.paInt16, sample_rate=48000):
+        self.CHUNK_SIZE: int = chunk_size
         self.AUDFORMAT = audformat
         self.SAMPLE_RATE: int = sample_rate
         self.STATE = States.PAUSED
@@ -34,8 +32,9 @@ class Session(object):
         self.inputCHANNELS: int = self.activeInput["maxInputChannels"]
         self.outputCHANNELS: int = self.activeOutput["maxOutputChannels"]
         self.BPM: int = 60
+        self.ui = ui
         self.effects: dict = {}
-        self.temptrack = 0  ##Testing; delete
+        self.temptrack = 0  # Testing; delete
 
     def getInputDevices(self):
         inputDevices = {}
@@ -57,11 +56,11 @@ class Session(object):
         if self.STATE != States.PLAYING:
             if self.STATE == States.PAUSED:
                 self.setSTATE(States.PLAYING)
-
             # maybe extrude this into async function and await all streams back
             playbackStreams = []
             for entry in self.tempFilePointerDict:
-                playbackStreams.append(Process(target=self.playback, args=(self.tempFilePointerDict[entry],)))
+                playbackStreams.append(
+                    Thread(target=self.playback, args=(self.tempFilePointerDict[entry],), daemon=True))
             ####
             print("Playing in 3...")
             time.sleep(1 * (60 / self.BPM))
@@ -76,6 +75,7 @@ class Session(object):
 
     def playback(self, wavFile):  # actual playback of audio stream or maybe this needs to return stream class obj
         wave_Read = wave.open(wavFile, 'rb')
+        self.effects = self.ui.getAllEffectVal()
         p = pyaudio.PyAudio()
         stream = p.open(format=self.pyAudio.get_format_from_width(wave_Read.getsampwidth()),
                         channels=wave_Read.getnchannels(),
@@ -87,7 +87,11 @@ class Session(object):
 
         # while self.STATE != States.PAUSED:
         while len(data := wave_Read.readframes(self.CHUNK_SIZE)):
-            stream.write(data)
+            data = np.frombuffer(data, dtype=np.int16)
+            data = self.applyEffects(data)
+            print(data)
+            data = data.astype(dtype=np.int16).tobytes()
+            stream.write(data, self.CHUNK_SIZE)
 
         print("* end playback")
         self.setSTATE(States.PAUSED)
@@ -101,12 +105,11 @@ class Session(object):
         self.setSTATE(States.PAUSED)
 
     def record_buttonpress(self):  # effect arg or ui abfrage
-        if self.activeOutput != None and self.activeInput != None and self.inputCHANNELS != None:
+        if self.activeOutput is not None and self.activeInput is not None and self.inputCHANNELS is not None:
             if self.STATE != States.RECORDING:
                 self.setSTATE(States.RECORDING)
-                self.effects = self.INTERFACE.getAllEffectVal()
                 recording = Thread(target=self.record, daemon=True)
-                if not self.INTERFACE.getSoloVal():
+                if not self.ui.getSoloVal():
                     play_stream = Thread(target=self.play_buttonpress, daemon=True)
                     play_stream.start()
                 recording.start()
@@ -131,16 +134,17 @@ class Session(object):
                                    channels=self.inputCHANNELS,
                                    rate=self.SAMPLE_RATE,
                                    input=True,
-                                   output=True,
+                                   output=False,
                                    frames_per_buffer=self.CHUNK_SIZE,
                                    input_device_index=self.activeInput["index"])
 
         print("* recording")
 
         tempFile = []
+
         while self.STATE != States.PAUSED:
             data = stream.read(self.CHUNK_SIZE)
-            #data = self.applyEffects(np.fromstring(data, np.float32))
+
             tempFile.append(data)
             # newTrack.updateGraph(tempFile)
 
@@ -157,7 +161,6 @@ class Session(object):
         wf.setframerate(self.SAMPLE_RATE)
         wf.writeframes(b''.join(tempFile))
         wf.close()
-        a = self.getOutputDevices()
         self.tempFilePointerDict.update(
             {self.temptrack: WAVE_OUTPUT_TEMP_FILENAME})  # TESTING ONLY;change/delte: self.temptrack
         self.temptrack += 1  # delete after testing
@@ -168,14 +171,19 @@ class Session(object):
                 case "reverb":
                     data = EffectUtil.reverb(wave=data, samplerate=self.SAMPLE_RATE,
                                              elevel=self.effects[effect]["eLevel"],
-                                             predelay=self.effects[effect]["eLevel"], delay=self.effects[effect]["eLevel"],
-                                             lowpass=self.effects[effect]["eLevel"],highpass=self.effects[effect]["eLevel"],
-                                             repeat=self.effects[effect]["eLevel"], length=0)
+                                             predelay=self.effects[effect]["preDelay"],
+                                             delay=self.effects[effect]["delay"],
+                                             lowpass=self.effects[effect]["lowPass"],
+                                             highpass=self.effects[effect]["highPass"],
+                                             repeat=self.effects[effect]["repeat"], length=0)
+
                 case "distorion":
-                    data = EffectUtil.distortSignal(wave=data, drive=self.effects[effect]["drive"], level=self.effects[effect]["eLevel"],
+                    data = EffectUtil.distortSignal(wave=data, drive=self.effects[effect]["drive"],
+                                                    level=self.effects[effect]["eLevel"],
                                                     volume=self.effects[effect]["volume"])
                 case "delay":
-                    data = EffectUtil.delay(wave=data, elevel=self.effects[effect]["eLevel"], delay=self.effects[effect]["delay"])
+                    data = EffectUtil.delay(wave=data, elevel=self.effects[effect]["eLevel"],
+                                            delay=self.effects[effect]["delay"])
         return data
 
     def deleteTrack(self, trackNum):
@@ -263,8 +271,8 @@ class Session(object):
     def setOutputCHANNELS(self, outputCHANNELS):
         self.outputCHANNELS = outputCHANNELS
 
-    def setPyAudio(self, pyaudio: pyaudio.PyAudio):
-        self.pyAudio = pyaudio
+    def setPyAudio(self, pyAudio: pyaudio.PyAudio):
+        self.pyAudio = pyAudio
 
     def setBPM(self, BPM: int):
         self.BPM = BPM

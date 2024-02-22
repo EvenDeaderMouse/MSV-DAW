@@ -9,7 +9,7 @@
 
 
 from PyQt5 import QtCore, QtGui, QtWidgets
-from Session import Session, States
+
 
 
 class Ui_MainWindow(object):
@@ -24,9 +24,9 @@ class Ui_MainWindow(object):
         self.centralwidget.setObjectName("centralwidget")
 
         # Data
-        self.session = Session(self, chunksize=512, sample_rate=48000)  # connects Backend
-        self.inputDevices = self.session.getInputDevices()['InputDevices']  # list of all input devices
-        self.outputDevices = self.session.getOutputDevices()['OutputDevices']  # list of all output devices
+        self.inputDevices = {}
+        self.outputDevices = {}
+        self.trackList = {}
 
 
         # Layout für Toolbar -> Start, Stop und Record Button
@@ -43,21 +43,18 @@ class Ui_MainWindow(object):
         self.recordButton = QtWidgets.QPushButton(self.horizontalLayoutWidget)
         self.recordButton.setObjectName("recordButton")
         self.toolbBar.addWidget(self.recordButton)
-        self.recordButton.clicked.connect(self.session.record_buttonpress)
         # self.recordButton calls -> self.session.record(), when pressed
 
         # StopButton
         self.stopButton = QtWidgets.QPushButton(self.horizontalLayoutWidget)
         self.stopButton.setObjectName("stopButton")
         self.toolbBar.addWidget(self.stopButton)
-        self.stopButton.clicked.connect(self.session.stop_buttonpress)
         # self.stopButton calls -> self.session.stop
 
         # PlayButton
         self.playButton = QtWidgets.QPushButton(self.horizontalLayoutWidget)
         self.playButton.setObjectName("playButton")
         self.toolbBar.addWidget(self.playButton)
-        self.playButton.clicked.connect(self.session.play_buttonpress)
         #self.playButton calls -> self.session.play(), when pressed
 
         # Area für Effekte
@@ -86,18 +83,23 @@ class Ui_MainWindow(object):
         self.repeat = QtWidgets.QDial(self.reverbBox)
         self.repeat.setGeometry(QtCore.QRect(150, 130, 31, 31))
         self.repeat.setMaximum(10)
+        self.repeat.setMinimum(1)
         self.repeat.setObjectName("repeat")
 
         # Reverb - LowPassdial
         self.lowPass = QtWidgets.QDial(self.reverbBox)
         self.lowPass.setGeometry(QtCore.QRect(80, 130, 31, 31))
         self.lowPass.setMaximum(22)
+        self.lowPass.setValue(22)
+        self.lowPass.setMinimum(1)
         self.lowPass.setObjectName("lowPass")
 
         # Reverb - HighPassdial
         self.highPass = QtWidgets.QDial(self.reverbBox)
         self.highPass.setGeometry(QtCore.QRect(10, 130, 31, 31))
         self.highPass.setMaximum(22)
+        self.highPass.setValue(1)
+        self.highPass.setMinimum(1)
         self.highPass.setObjectName("highPass")
 
         # Reverb - ELeveldial
@@ -245,6 +247,8 @@ class Ui_MainWindow(object):
         self.track1Label.setObjectName("track1Label")
         self.trackBox.setWidget(self.scrollAreaWidgetContents_2)
 
+        self.trackList.update({"1": self.trackGraphic.geometry()})
+
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 943, 18))
@@ -300,17 +304,17 @@ class Ui_MainWindow(object):
     def getAllEffectVal(self):
         effectVals = {}
         effectVals.update({"reverb": self.getReverbVal()})
-        effectVals.update({"distortion": self.getDistortionVal()})
+        #effectVals.update({"distortion": self.getDistortionVal()})
         effectVals.update({"delay": self.getDelayVal()})
         return effectVals
 
     def getReverbVal(self):
         reverbVal = {}
-        reverbVal.update({"eLevel": self.elevel.value()})
-        reverbVal.update({"preDelay": self.preDelay.value()})
-        reverbVal.update({"delay": self.delay.value()})
-        reverbVal.update({"highPass": self.highPass.value()})
-        reverbVal.update({"lowPass": self.lowPass.value()})
+        reverbVal.update({"eLevel": self.elevel.value()/100})
+        reverbVal.update({"preDelay": self.preDelay.value()/100})
+        reverbVal.update({"delay": self.delay.value()/100})
+        reverbVal.update({"highPass": self.highPass.value()*1000})
+        reverbVal.update({"lowPass": self.lowPass.value()*1000})
         reverbVal.update({"repeat": self.repeat.value()})
         return reverbVal
 
@@ -328,7 +332,15 @@ class Ui_MainWindow(object):
         return delayVal
 
     def getSoloVal(self):
+        #true ->solo recording
+        #false -> recording with playback
         return True #self.solo.value()
+
+    def setInputDeviceDict(self, inputDevices: dict):
+        self.inputDevices = inputDevices
+
+    def setOutputDeviceDict(self, outputDevices: dict):
+        self.outputDevices = outputDevices
 
 if __name__ == "__main__":
     import sys
