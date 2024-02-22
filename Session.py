@@ -75,7 +75,7 @@ class Session(object):
 
     def playback(self, wavFile):  # actual playback of audio stream or maybe this needs to return stream class obj
         wave_Read = wave.open(wavFile, 'rb')
-        self.effects = self.ui.getAllEffectVal()
+
         p = pyaudio.PyAudio()
         stream = p.open(format=self.pyAudio.get_format_from_width(wave_Read.getsampwidth()),
                         channels=wave_Read.getnchannels(),
@@ -87,10 +87,6 @@ class Session(object):
 
         # while self.STATE != States.PAUSED:
         while len(data := wave_Read.readframes(self.CHUNK_SIZE)):
-            data = np.frombuffer(data, dtype=np.int16)
-            data = self.applyEffects(data)
-            print(data)
-            data = data.astype(dtype=np.int16).tobytes()
             stream.write(data, self.CHUNK_SIZE)
 
         print("* end playback")
@@ -123,7 +119,7 @@ class Session(object):
 
     def record(self):
         # newTrack = createNewTrack()->returns num/name
-
+        self.effects = self.ui.getAllEffectVal()
         print("Recording in 3...")
         time.sleep(1 * (60 / self.BPM))
         print("Recording in 2...")
@@ -141,10 +137,16 @@ class Session(object):
         print("* recording")
 
         tempFile = []
-
+        buffer = np.empty([0, 1], dtype=bytes)
         while self.STATE != States.PAUSED:
-            data = stream.read(self.CHUNK_SIZE)
-
+            data = buffer[:self.CHUNK_SIZE] + stream.read(self.CHUNK_SIZE - len(buffer))  # can't add try join
+            buffer = buffer[self.CHUNK_SIZE:]
+            data = np.frombuffer(data, dtype=np.int16)
+            data = self.applyEffects(data)
+            if data > self.CHUNK_SIZE:
+                buffer = np.append(buffer, data[self.CHUNK_SIZE:])
+                data = data[:self.CHUNK_SIZE]
+            data = data.astype(dtype=np.int16).tobytes()
             tempFile.append(data)
             # newTrack.updateGraph(tempFile)
 
