@@ -111,13 +111,13 @@ class Ui_MainWindow(object):
         # Reverb - PreDelaydial
         self.preDelay = QtWidgets.QDial(self.reverbBox)
         self.preDelay.setGeometry(QtCore.QRect(80, 70, 31, 31))
-        self.preDelay.setMaximum(100)
+        self.preDelay.setMaximum(200)
         self.preDelay.setObjectName("preDelay")
 
         # Reverb - Delaydial
         self.delay = QtWidgets.QDial(self.reverbBox)
         self.delay.setGeometry(QtCore.QRect(150, 70, 31, 31))
-        self.delay.setMaximum(100)
+        self.delay.setMaximum(200)
         self.delay.setObjectName("delay")
 
         # Label für Dials
@@ -190,7 +190,7 @@ class Ui_MainWindow(object):
         # Delay - Delaydial
         self.delayDelay = QtWidgets.QDial(self.delayBox)
         self.delayDelay.setGeometry(QtCore.QRect(10, 60, 31, 31))
-        self.delayDelay.setMaximum(100)
+        self.delayDelay.setMaximum(200)
         self.delayDelay.setObjectName("delayDelay")
 
         # Delay - ELevelDelayDial

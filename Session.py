@@ -137,18 +137,24 @@ class Session(object):
         print("* recording")
 
         tempFile = []
-        buffer = np.empty([0, 1], dtype=bytes)
+        buffer = np.empty([0, 1], dtype=np.int16)
         while self.STATE != States.PAUSED:
-            data = buffer[:self.CHUNK_SIZE] + stream.read(self.CHUNK_SIZE - len(buffer))  # can't add try join
+
+            newdata = stream.read(self.CHUNK_SIZE)
+
+            newdata = np.frombuffer(newdata, dtype=np.int16)
+            newdata = self.applyEffects(newdata)            
+            buffer = EffectUtil.addWaves(buffer, [newdata,])
+            
+            data = buffer[:self.CHUNK_SIZE]
             buffer = buffer[self.CHUNK_SIZE:]
-            data = np.frombuffer(data, dtype=np.int16)
-            data = self.applyEffects(data)
-            if data > self.CHUNK_SIZE:
-                buffer = np.append(buffer, data[self.CHUNK_SIZE:])
-                data = data[:self.CHUNK_SIZE]
+                
             data = data.astype(dtype=np.int16).tobytes()
             tempFile.append(data)
             # newTrack.updateGraph(tempFile)
+
+        if len(buffer) > 0:
+            tempFile.append(buffer.astype(dtype=np.int16).tobytes())
 
         print("* end recording")
         self.setSTATE(States.PAUSED)
@@ -180,10 +186,12 @@ class Session(object):
                                              repeat=self.effects[effect]["repeat"], length=0)
 
                 case "distorion":
+                    pass
                     data = EffectUtil.distortSignal(wave=data, drive=self.effects[effect]["drive"],
                                                     level=self.effects[effect]["eLevel"],
                                                     volume=self.effects[effect]["volume"])
                 case "delay":
+                    pass
                     data = EffectUtil.delay(wave=data, elevel=self.effects[effect]["eLevel"],
                                             delay=self.effects[effect]["delay"])
         return data

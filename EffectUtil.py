@@ -16,7 +16,7 @@ def addWaves(baseWave, addedWaves, offset=0):
         else:
             t = len(wave) + offset
 
-        newSamples = np.linspace(0, 1, t)
+        newSamples = np.linspace(0, 0, t)
 
         newWave = np.empty([len(newSamples)], )
 
@@ -52,7 +52,7 @@ def butter_highpass(cutoff, fs, order=5):
 
 
 def butter_lowpass_filter(data, cutoff, fs, order=5):
-    b, a = butter_lowpass(cutoff, fs, order=order)
+    b, a = butter_lowpass(cutoff=cutoff, fs=fs)
     y = lfilter(b, a, data)
     return y
 
@@ -74,12 +74,12 @@ def reverbResponse(wave, samplerate, elevel=0.5, predelay=0., delay=0., lowpass=
     if highpass > 0:
         reverbEff = butter_highpass_filter(reverbEff, highpass, samplerate)  # apply highpass
     if predelay > 0:
-        predelayEff = np.linspace(0, 1, int(predelay * samplerate))  # predelay space
+        predelayEff = np.linspace(0, 0, int(predelay * samplerate))  # predelay space
     else:
         predelayEff = np.array([])
     predelayEff = np.append(predelayEff, wave)  # predelay effect
     finishedReverb = addWaves(predelayEff, [reverbEff, ],
-                              int(delay * samplerate))  # apply reverb effect after delay
+                              int(delay *samplerate))  # apply reverb effect after delay
     return finishedReverb * elevel
 
 
