@@ -143,7 +143,21 @@ class Session(object):
             newdata = stream.read(self.CHUNK_SIZE)
 
             newdata = np.frombuffer(newdata, dtype=np.int16)
-            newdata = self.applyEffects(newdata)            
+
+            """
+            needs parallel execution
+            applying Effects and adding waves takes too long
+            ->input overflow
+            Solution:
+            pass new Data to new thread/maybe multiprocessing
+            maybe:play the stream with stream.write(data) ->needs synchronicity and await tho
+            when thread/process done-> return val to this thread/process
+            add all modified data -> wav file
+            possible Issues: 1 or 2 threads getting mixed up are no problem, but regularly ensuring the right order
+            of outputs necessary-> maybe assemble wave by optional param given in return val(maybe Thread Nr)
+            
+            """
+            newdata = self.applyEffects(newdata)
             buffer = EffectUtil.addWaves(buffer, [newdata,])
             
             data = buffer[:self.CHUNK_SIZE]
@@ -170,7 +184,7 @@ class Session(object):
         wf.writeframes(b''.join(tempFile))
         wf.close()
         self.tempFilePointerDict.update(
-            {self.temptrack: WAVE_OUTPUT_TEMP_FILENAME})  # TESTING ONLY;change/delte: self.temptrack
+            {self.temptrack: WAVE_OUTPUT_TEMP_FILENAME})  # TESTING ONLY;change/delete: self.temptrack
         self.temptrack += 1  # delete after testing
 
     def applyEffects(self, data):
@@ -186,12 +200,10 @@ class Session(object):
                                              repeat=self.effects[effect]["repeat"], length=0)
 
                 case "distorion":
-                    pass
                     data = EffectUtil.distortSignal(wave=data, drive=self.effects[effect]["drive"],
                                                     level=self.effects[effect]["eLevel"],
                                                     volume=self.effects[effect]["volume"])
                 case "delay":
-                    pass
                     data = EffectUtil.delay(wave=data, elevel=self.effects[effect]["eLevel"],
                                             delay=self.effects[effect]["delay"])
         return data

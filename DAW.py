@@ -9,6 +9,7 @@
 
 
 from PyQt5 import QtCore, QtGui, QtWidgets
+import matplotlib
 
 
 
@@ -26,7 +27,7 @@ class Ui_MainWindow(object):
         # Data
         self.inputDevices = {}
         self.outputDevices = {}
-        self.trackList = {}
+        self.trackList = {} #needs to be {'Trackid': imagedata in np.array form}
 
 
         # Layout für Toolbar -> Start, Stop und Record Button
@@ -111,13 +112,13 @@ class Ui_MainWindow(object):
         # Reverb - PreDelaydial
         self.preDelay = QtWidgets.QDial(self.reverbBox)
         self.preDelay.setGeometry(QtCore.QRect(80, 70, 31, 31))
-        self.preDelay.setMaximum(200)
+        self.preDelay.setMaximum(100)
         self.preDelay.setObjectName("preDelay")
 
         # Reverb - Delaydial
         self.delay = QtWidgets.QDial(self.reverbBox)
         self.delay.setGeometry(QtCore.QRect(150, 70, 31, 31))
-        self.delay.setMaximum(200)
+        self.delay.setMaximum(100)
         self.delay.setObjectName("delay")
 
         # Label für Dials
@@ -190,7 +191,7 @@ class Ui_MainWindow(object):
         # Delay - Delaydial
         self.delayDelay = QtWidgets.QDial(self.delayBox)
         self.delayDelay.setGeometry(QtCore.QRect(10, 60, 31, 31))
-        self.delayDelay.setMaximum(200)
+        self.delayDelay.setMaximum(100)
         self.delayDelay.setObjectName("delayDelay")
 
         # Delay - ELevelDelayDial
@@ -278,6 +279,9 @@ class Ui_MainWindow(object):
         # self.session.deleteTrack(self, trackNum)
         # remove all UI elements with TrackNum
         return True
+    
+    def updateTrack(self, trackID, data):
+        pass
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
@@ -305,7 +309,7 @@ class Ui_MainWindow(object):
         effectVals = {}
         effectVals.update({"reverb": self.getReverbVal()})
         #effectVals.update({"distortion": self.getDistortionVal()})
-        effectVals.update({"delay": self.getDelayVal()})
+        #effectVals.update({"delay": self.getDelayVal()})
         return effectVals
 
     def getReverbVal(self):
@@ -328,7 +332,7 @@ class Ui_MainWindow(object):
     def getDelayVal(self):
         delayVal = {}
         delayVal.update({"eLevel": self.elevelDelay.value()})
-        delayVal.update({"delay": self.delayDelay.value()})
+        delayVal.update({"delay": self.delayDelay.value()/100})
         return delayVal
 
     def getSoloVal(self):
