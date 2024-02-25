@@ -12,7 +12,28 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 from Session import Session, States
 
 
+class TrackWidget(QtWidgets.QWidget):
+    def __init__(self, track_num):
+        super().__init__()
+        self.track_num = track_num
+        self.initUI()
+
+    def initUI(self):
+        layout = QtWidgets.QVBoxLayout(self)
+
+        # Create and add widgets for the track (graphics view, volume slider, label)
+        self.trackGraphic = QtWidgets.QGraphicsView()
+        layout.addWidget(self.trackGraphic)
+        self.trackLabel = QtWidgets.QLabel(f"Track {self.track_num}")
+        self.trackLabel.setAlignment(QtCore.Qt.AlignCenter)  # Align the label text to the center
+        layout.addWidget(self.trackLabel)
+        self.trackVolume = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        self.trackVolume.setFixedWidth(80)  # Set a fixed width for the volume slider
+        layout.addWidget(self.trackVolume)
+
 class Ui_MainWindow(object):
+    def __init__(self):
+        self.trackWidgets = []
 
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
@@ -220,27 +241,22 @@ class Ui_MainWindow(object):
         self.horizontalScrollBar.setOrientation(QtCore.Qt.Horizontal)
         self.horizontalScrollBar.setObjectName("horizontalScrollBar")
 
+        # Initialize layout for scrollAreaWidgetContents_2
+        self.scrollAreaWidgetContents_2.setLayout(QtWidgets.QVBoxLayout())
+
         # Track1
-        self.track1 = QtWidgets.QGroupBox(self.scrollAreaWidgetContents_2)
-        self.track1.setGeometry(QtCore.QRect(10, 10, 581, 121))
-        self.track1.setTitle("")
-        self.track1.setObjectName("track1")
+        self.track0 = QtWidgets.QGroupBox(self.scrollAreaWidgetContents_2)
+        self.track0.setGeometry(QtCore.QRect(0,0,0,0))
+        self.track0.setTitle("")
+        self.track0.setObjectName("track0")
 
 
         # Track1 - Grafik
-        self.trackGraphic = QtWidgets.QGraphicsView(self.track1)
-        self.trackGraphic.setGeometry(QtCore.QRect(110, 10, 451, 101))
-        self.trackGraphic.setObjectName("trackGraphic")
 
         # Track 1 - Volume
-        self.track1Volume = QtWidgets.QSlider(self.track1)
-        self.track1Volume.setGeometry(QtCore.QRect(0, 80, 101, 20))
-        self.track1Volume.setOrientation(QtCore.Qt.Horizontal)
-        self.track1Volume.setObjectName("track1Volume")
-        self.track1Label = QtWidgets.QLabel(self.track1)
-        self.track1Label.setGeometry(QtCore.QRect(0, 30, 71, 16))
-        self.track1Label.setObjectName("track1Label")
         self.trackBox.setWidget(self.scrollAreaWidgetContents_2)
+        # Add track1 to trackWidgets
+        self.trackWidgets.append(self.track0)
 
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
@@ -261,11 +277,76 @@ class Ui_MainWindow(object):
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
-    def createNewTrack(self):
+    #def createNewTrack(self):
         # get first Free Track num -> this class needs a object keeping score of all available tracks
         # creates new Track under last one in box
         # returns trackname/-num
-        return 2  # later trackNum or Name
+       # return 2  # later trackNum or Name
+    def createNewTrack(self):
+        print("entering createNewTrack")
+        # Get the first free track number
+        free_track_num = self.getFirstFreeTrackNumber()
+        print(free_track_num)
+
+        # Create a new track widget
+        new_track_widget = self.createTrackWidget(free_track_num)
+        print(new_track_widget)
+        print(new_track_widget.objectName())
+
+        # Add the new track widget to your UI (e.g., scroll area)
+        self.scrollAreaWidgetContents_2.layout().addWidget(new_track_widget)
+
+        # Return the track number or name
+        return new_track_widget.objectName()
+
+    def getFirstFreeTrackNumber(self):
+        track_numbers = [int(widget.objectName().replace('track', '')) for widget in self.trackWidgets]
+        for i in range(1, len(track_numbers) + 2):
+            if i not in track_numbers:
+                return i
+
+    def createTrackWidget(self, track_num):
+        # Create a group box for the track
+        track_group_box = QtWidgets.QGroupBox(self.scrollAreaWidgetContents_2)
+        track_group_box.setObjectName(f"track{track_num}")
+        track_group_box.setTitle("")
+        track_group_box.setFixedHeight(150)  # Adjust the height as needed
+
+        # Create a layout for the track widget
+        layout = QtWidgets.QHBoxLayout(track_group_box)
+
+        # Create a track widget
+        track_widget = TrackWidget(track_num)
+
+        # Create a label for the track
+        track_title_label = QtWidgets.QLabel(f"Track {track_num}")  # Customize the label text as needed
+        track_title_label.setAlignment(QtCore.Qt.AlignCenter)  # Align the label text to the center
+
+        # Add the track graphic to the layout
+        layout.addWidget(track_widget.trackGraphic)
+
+        # Create a vertical layout for the volume slider and label
+        volume_layout = QtWidgets.QVBoxLayout()
+
+        # Add the track label to the vertical layout
+        volume_layout.addWidget(track_widget.trackLabel)
+
+        # Add the volume slider to the vertical layout
+        volume_layout.addWidget(track_widget.trackVolume)
+
+        # Add spacing between the volume slider and label
+        volume_layout.addSpacing(2)  # Adjust the spacing as needed
+
+        # Set the volume layout as the layout for the track group box
+        layout.addLayout(volume_layout)
+
+        # Add the track group box to the layout of scrollAreaWidgetContents_2
+        self.scrollAreaWidgetContents_2.layout().addWidget(track_group_box)
+
+        # Add the track widget to the list of track widgets
+        self.trackWidgets.append(track_group_box)
+
+        return track_group_box
 
     def deleteTrack(self, trackNum):
         # self.session.deleteTrack(self, trackNum)
@@ -292,7 +373,7 @@ class Ui_MainWindow(object):
         self.delayLabel.setText(_translate("MainWindow", "Delay"))
         self.label_4.setText(_translate("MainWindow", "delay"))
         self.label_5.setText(_translate("MainWindow", "elevel"))
-        self.track1Label.setText(_translate("MainWindow", "Track 1"))
+       # self.track0Label.setText(_translate("MainWindow", "Track 0"))
 
 
 if __name__ == "__main__":

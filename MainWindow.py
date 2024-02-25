@@ -37,7 +37,10 @@ class MainWindow(QMainWindow):
 
     # Methoden, die auf Benutzeraktionen reagieren
     def startRecording(self):
-        self.session.record_buttonpress()
+       # self.session.record_buttonpress()
+       # Create a new track in the GUI when the record button is pressed
+       new_track_num = self.ui.createNewTrack()
+       print(f"New track created: {new_track_num}")
 
     def stopRecording(self):
         self.session.stop_buttonpress()
