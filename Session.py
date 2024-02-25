@@ -1,3 +1,5 @@
+from queue import Queue
+
 import numpy as np
 import pyaudio
 import wave
@@ -136,45 +138,43 @@ class Session(object):
 
         print("* recording")
 
-        tempFile = []
-        buffer = np.empty([0, 1], dtype=np.int16)
-        while self.STATE != States.PAUSED:
+        dataqueue = Queue()
+        _queueEnd = object()
+        Thread(target=self.processStream, args=[dataqueue, _queueEnd, ]).start()
+        while self.getSTATE() != States.PAUSED:
+            new_data = stream.read(self.CHUNK_SIZE)
+            dataqueue.put(new_data)
 
-            newdata = stream.read(self.CHUNK_SIZE)
-
-            newdata = np.frombuffer(newdata, dtype=np.int16)
-
-            """
-            needs parallel execution
-            applying Effects and adding waves takes too long
-            ->input overflow
-            Solution:
-            pass new Data to new thread/maybe multiprocessing
-            maybe:play the stream with stream.write(data) ->needs synchronicity and await tho
-            when thread/process done-> return val to this thread/process
-            add all modified data -> wav file
-            possible Issues: 1 or 2 threads getting mixed up are no problem, but regularly ensuring the right order
-            of outputs necessary-> maybe assemble wave by optional param given in return val(maybe Thread Nr)
-            
-            """
-            newdata = self.applyEffects(newdata)
-            buffer = EffectUtil.addWaves(buffer, [newdata,])
-            
-            data = buffer[:self.CHUNK_SIZE]
-            buffer = buffer[self.CHUNK_SIZE:]
-                
-            data = data.astype(dtype=np.int16).tobytes()
-            tempFile.append(data)
-            # newTrack.updateGraph(tempFile)
-
-        if len(buffer) > 0:
-            tempFile.append(buffer.astype(dtype=np.int16).tobytes())
+        dataqueue.put(_queueEnd)
+        print("End put")
+        dataqueue.join()
 
         print("* end recording")
         self.setSTATE(States.PAUSED)
 
         stream.stop_stream()
         stream.close()
+
+    def processStream(self, dataqueue: Queue, _queueEnd):
+        tempFile = []
+        buffer = np.empty([0, 1], dtype=np.int16)
+        data = dataqueue.get()
+        while data is not _queueEnd:
+            data = np.frombuffer(data, dtype=np.int16)
+            data = self.applyEffects(data)
+            buffer = EffectUtil.addWaves(buffer, [data, ])
+
+            data = buffer[:self.CHUNK_SIZE]
+            buffer = buffer[self.CHUNK_SIZE:]
+
+            data = data.astype(dtype=np.int16).tobytes()
+            tempFile.append(data)
+            # self.passTrackImageData(data)
+
+            data = dataqueue.get()
+
+        if len(buffer) > 0:
+            tempFile.append(buffer.astype(dtype=np.int16).tobytes())
 
         WAVE_OUTPUT_TEMP_FILENAME = str(datetime.now()).replace(":", "-") + ".wav"
         wf = wave.open(WAVE_OUTPUT_TEMP_FILENAME, 'wb')
@@ -186,6 +186,8 @@ class Session(object):
         self.tempFilePointerDict.update(
             {self.temptrack: WAVE_OUTPUT_TEMP_FILENAME})  # TESTING ONLY;change/delete: self.temptrack
         self.temptrack += 1  # delete after testing
+        print(dataqueue.qsize())
+        dataqueue.task_done()
 
     def applyEffects(self, data):
         for effect in self.effects:
@@ -207,6 +209,9 @@ class Session(object):
                     data = EffectUtil.delay(wave=data, elevel=self.effects[effect]["eLevel"],
                                             delay=self.effects[effect]["delay"])
         return data
+
+    def passTrackImageData(self, trackID, imageData):
+        self.ui.updateTrack(trackID, imageData)
 
     def deleteTrack(self, trackNum):
         try:
