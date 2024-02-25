@@ -264,7 +264,7 @@ class Ui_MainWindow(object):
         # Add track1 to trackWidgets
         self.trackWidgets.append(self.track0)
 
-        self.trackList.update({"1": self.trackGraphic.geometry()})
+        #self.trackList.update({"1": self.trackGraphic.geometry()})
 
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
@@ -285,11 +285,6 @@ class Ui_MainWindow(object):
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
-    #def createNewTrack(self):
-        # get first Free Track num -> this class needs a object keeping score of all available tracks
-        # creates new Track under last one in box
-        # returns trackname/-num
-       # return 2  # later trackNum or Name
     def createNewTrack(self):
         print("entering createNewTrack")
         # Get the first free track number
@@ -361,8 +356,8 @@ class Ui_MainWindow(object):
         # remove all UI elements with TrackNum
         return True
     
-    def updateTrack(self, trackID, data):
-        pass
+    def updateTrack(self, trackName, data):
+        print (trackName)
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate

@@ -120,7 +120,7 @@ class Session(object):
             pass
 
     def record(self):
-        # newTrack = createNewTrack()->returns num/name
+        newTrackName = self.ui.createNewTrack()
         self.effects = self.ui.getAllEffectVal()
         print("Recording in 3...")
         time.sleep(1 * (60 / self.BPM))
@@ -140,7 +140,7 @@ class Session(object):
 
         dataqueue = Queue()
         _queueEnd = object()
-        Thread(target=self.processStream, args=[dataqueue, _queueEnd, ]).start()
+        Thread(target=self.processStream, args=[dataqueue, _queueEnd, newTrackName ]).start()
         while self.getSTATE() != States.PAUSED:
             new_data = stream.read(self.CHUNK_SIZE)
             dataqueue.put(new_data)
@@ -155,7 +155,7 @@ class Session(object):
         stream.stop_stream()
         stream.close()
 
-    def processStream(self, dataqueue: Queue, _queueEnd):
+    def processStream(self, dataqueue: Queue, _queueEnd, newTrackName):
         tempFile = []
         buffer = np.empty([0, 1], dtype=np.int16)
         data = dataqueue.get()
@@ -184,9 +184,7 @@ class Session(object):
         wf.writeframes(b''.join(tempFile))
         wf.close()
         self.tempFilePointerDict.update(
-            {self.temptrack: WAVE_OUTPUT_TEMP_FILENAME})  # TESTING ONLY;change/delete: self.temptrack
-        self.temptrack += 1  # delete after testing
-        print(dataqueue.qsize())
+            {newTrackName: WAVE_OUTPUT_TEMP_FILENAME})
         dataqueue.task_done()
 
     def applyEffects(self, data):
@@ -210,10 +208,10 @@ class Session(object):
                                             delay=self.effects[effect]["delay"])
         return data
 
-    def passTrackImageData(self, trackID, imageData):
-        self.ui.updateTrack(trackID, imageData)
+    def passTrackImageData(self, trackName, imageData):
+        self.ui.updateTrack(trackName, imageData)
 
-    def deleteTrack(self, trackNum):
+    def deleteTrack(self, trackName):
         try:
             del self.tempFilePointerDict[trackNum]
         except KeyError:
