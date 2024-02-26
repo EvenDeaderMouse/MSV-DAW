@@ -120,6 +120,7 @@ class Session(object):
 
     def record(self):
         newTrackName = self.ui.createNewTrack()
+        new_track_num = self.ui.createNewTrack() #dein code
         self.effects = self.ui.getAllEffectVal()
         print("Recording in 3...")
         time.sleep(1 * (60 / self.BPM))
@@ -166,9 +167,8 @@ class Session(object):
             data = buffer[:self.CHUNK_SIZE]
             buffer = buffer[self.CHUNK_SIZE:]
 
-            data = data.astype(dtype=np.int16).tobytes()
-            tempFile.append(data)
-            # self.passTrackImageData(data)
+            tempFile.append(data.astype(dtype=np.int16).tobytes())
+            Thread(target=self.passTrackImageData, args=[newTrackName, data ]).start()
 
             data = dataqueue.get()
 
@@ -208,7 +208,7 @@ class Session(object):
         return data
 
     def passTrackImageData(self, trackName, imageData):
-        Thread(target=self.ui.updateTrack, args=[trackName, imageData,])
+        self.ui.updateTrack(trackName, imageData)
 
     def deleteTrack(self, trackName):
         try:

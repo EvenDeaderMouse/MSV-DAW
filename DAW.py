@@ -12,7 +12,6 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 import matplotlib
 
 
-
 class TrackWidget(QtWidgets.QWidget):
     def __init__(self, track_num):
         super().__init__()
@@ -32,6 +31,7 @@ class TrackWidget(QtWidgets.QWidget):
         self.trackVolume.setFixedWidth(80)  # Set a fixed width for the volume slider
         layout.addWidget(self.trackVolume)
 
+
 class Ui_MainWindow(object):
     def __init__(self):
         self.trackWidgets = []
@@ -48,8 +48,7 @@ class Ui_MainWindow(object):
         # Data
         self.inputDevices = {}
         self.outputDevices = {}
-        self.trackList = {} #needs to be {'Trackid': imagedata in np.array form}
-
+        self.trackList = {}  # needs to be {'Trackid': imagedata in np.array form}
 
         # Layout für Toolbar -> Start, Stop und Record Button
         self.horizontalLayoutWidget = QtWidgets.QWidget(self.centralwidget)
@@ -77,7 +76,7 @@ class Ui_MainWindow(object):
         self.playButton = QtWidgets.QPushButton(self.horizontalLayoutWidget)
         self.playButton.setObjectName("playButton")
         self.toolbBar.addWidget(self.playButton)
-        #self.playButton calls -> self.session.play(), when pressed
+        # self.playButton calls -> self.session.play(), when pressed
 
         # Area für Effekte
         self.effectArea = QtWidgets.QScrollArea(self.centralwidget)
@@ -252,10 +251,9 @@ class Ui_MainWindow(object):
 
         # Track1
         self.track0 = QtWidgets.QGroupBox(self.scrollAreaWidgetContents_2)
-        self.track0.setGeometry(QtCore.QRect(0,0,0,0))
+        self.track0.setGeometry(QtCore.QRect(0, 0, 0, 0))
         self.track0.setTitle("")
         self.track0.setObjectName("track0")
-
 
         # Track1 - Grafik
 
@@ -264,7 +262,7 @@ class Ui_MainWindow(object):
         # Add track1 to trackWidgets
         self.trackWidgets.append(self.track0)
 
-        #self.trackList.update({"1": self.trackGraphic.geometry()})
+        # self.trackList.update({"1": self.trackGraphic.geometry()})
 
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
@@ -355,9 +353,12 @@ class Ui_MainWindow(object):
         # self.session.deleteTrack(self, trackNum)
         # remove all UI elements with TrackNum
         return True
-    
+
     def updateTrack(self, trackName, data):
-        print (trackName)
+        #hier bitte aus alten und neuen Daten ein bild erstellen
+        #und dann in die Image box vom Track packen
+        #das wärs
+        print(data) #<--hier deine Daten
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
@@ -379,22 +380,23 @@ class Ui_MainWindow(object):
         self.delayLabel.setText(_translate("MainWindow", "Delay"))
         self.label_4.setText(_translate("MainWindow", "delay"))
         self.label_5.setText(_translate("MainWindow", "elevel"))
-       # self.track0Label.setText(_translate("MainWindow", "Track 0"))
+
+    # self.track0Label.setText(_translate("MainWindow", "Track 0"))
 
     def getAllEffectVal(self):
         effectVals = {}
         effectVals.update({"reverb": self.getReverbVal()})
-        #effectVals.update({"distortion": self.getDistortionVal()})
-        #effectVals.update({"delay": self.getDelayVal()})
+        # effectVals.update({"distortion": self.getDistortionVal()})
+        # effectVals.update({"delay": self.getDelayVal()})
         return effectVals
 
     def getReverbVal(self):
         reverbVal = {}
-        reverbVal.update({"eLevel": self.elevel.value()/100})
-        reverbVal.update({"preDelay": self.preDelay.value()/100})
-        reverbVal.update({"delay": self.delay.value()/100})
-        reverbVal.update({"highPass": self.highPass.value()*1000})
-        reverbVal.update({"lowPass": self.lowPass.value()*1000})
+        reverbVal.update({"eLevel": self.elevel.value() / 100})
+        reverbVal.update({"preDelay": self.preDelay.value() / 100})
+        reverbVal.update({"delay": self.delay.value() / 100})
+        reverbVal.update({"highPass": self.highPass.value() * 1000})
+        reverbVal.update({"lowPass": self.lowPass.value() * 1000})
         reverbVal.update({"repeat": self.repeat.value()})
         return reverbVal
 
@@ -408,19 +410,20 @@ class Ui_MainWindow(object):
     def getDelayVal(self):
         delayVal = {}
         delayVal.update({"eLevel": self.elevelDelay.value()})
-        delayVal.update({"delay": self.delayDelay.value()/100})
+        delayVal.update({"delay": self.delayDelay.value() / 100})
         return delayVal
 
     def getSoloVal(self):
-        #true ->solo recording
-        #false -> recording with playback
-        return True #self.solo.value()
+        # true ->solo recording
+        # false -> recording with playback
+        return True  # self.solo.value()
 
     def setInputDeviceDict(self, inputDevices: dict):
         self.inputDevices = inputDevices
 
     def setOutputDeviceDict(self, outputDevices: dict):
         self.outputDevices = outputDevices
+
 
 if __name__ == "__main__":
     import sys
