@@ -38,6 +38,8 @@ class TrackWidget(QtWidgets.QWidget):
         layout.addWidget(self.trackVolume)
 
 
+
+
 class Ui_MainWindow(object):
     def __init__(self):
         self.trackWidgets = []
