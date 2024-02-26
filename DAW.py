@@ -10,10 +10,12 @@ import numpy as np
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 import matplotlib
+from PyQt5.QtCore import QTimer
 from PyQt5.QtGui import QPixmap, QImage
 from PyQt5.QtWidgets import QVBoxLayout
 from matplotlib import pyplot as plt
 from matplotlib.backends.backend_template import FigureCanvas
+import pyqtgraph as pg
 
 
 class TrackWidget(QtWidgets.QWidget):
@@ -24,12 +26,10 @@ class TrackWidget(QtWidgets.QWidget):
 
     def initUI(self):
         layout = QtWidgets.QVBoxLayout(self)
-
         # Create and add widgets for the track (graphics view, volume slider, label)
        # self.trackGraphic = QtWidgets.QGraphicsView()
-        self.scene = QtWidgets.QGraphicsScene()
-        self.trackGraphic = QtWidgets.QGraphicsView(self.scene)
-        layout.addWidget(self.trackGraphic)
+        self.trackGraphic = TrackGraphic()  # Create an instance of TrackGraphic
+        layout.addWidget(self.trackGraphic)  # Add TrackGraphic to the layout
         self.trackLabel = QtWidgets.QLabel(f"Track {self.track_num}")
         self.trackLabel.setAlignment(QtCore.Qt.AlignCenter)  # Align the label text to the center
         layout.addWidget(self.trackLabel)
@@ -37,13 +37,45 @@ class TrackWidget(QtWidgets.QWidget):
         self.trackVolume.setFixedWidth(80)  # Set a fixed width for the volume slider
         layout.addWidget(self.trackVolume)
 
+    def updateTrack(self, data):
+        # Forward the data to the TrackGraphic instance
+        if hasattr(self, 'trackGraphic'):
+            self.trackGraphic.update_plot(data)
+        else:
+            print("TrackGraphic instance not found.")
 
+class TrackGraphic(pg.GraphicsLayoutWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.plot_item = self.addPlot(title="Track Graphic")
+        self.curve = self.plot_item.plot(pen='y')
+
+    def update_plot(self, data):
+        if isinstance(data, np.ndarray):
+            # Ensure data is a numpy array
+            self.curve.setData(data)
+        else:
+            print("Invalid data format. Expected numpy array.")
+
+    def update_image(self, image):
+        self.plot_item.clear()
+        self.plot_item.setImage(image)
 
 
 class Ui_MainWindow(object):
     def __init__(self):
         self.trackWidgets = []
+        self.timer = QTimer()  # Create a QTimer instance
+        self.timer.timeout.connect(self.update_plots)  # Connect timeout signal to update_plots method
+        self.timer.start(2000)  # Start the timer with a timeout of 2000 milliseconds (2 seconds)
 
+    def update_plots(self, data):
+        # This method will be called to update the plots with new data
+
+        # Iterate over each trackWidget
+        for trackWidget in self.trackWidgets:
+            # Update the track with new data
+            trackWidget.updateTrack(data)
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.setEnabled(True)
@@ -365,35 +397,25 @@ class Ui_MainWindow(object):
 
     def updateTrack(self, trackName, data):
         print("Updating track:", trackName)
-        # print(data)  # <--hier deine Daten
         try:
-            print("enter try")
-            # Create a figure and a canvas for the plot
-            fig, ax = plt.subplots()
-            ax.imshow(data, interpolation='nearest')
-            ax.set_title(trackName)
-            print("test1")
-
-
-            # Embed the plot in a QWidget
-            canvas = FigureCanvas(fig)
-            canvas.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
-            print(canvas)
-            layout = QVBoxLayout()
-            layout.addWidget(canvas)
-            print("canvas added")
-
-            # Clear previous contents of the trackGraphic
+            # Find the track widget by its name
             trackWidget = self.findTrackWidget(trackName)
-            for widget in trackWidget.findChildren(QtWidgets.QWidget):
-                if isinstance(widget, TrackWidget):
-                    layoutWidget = widget.layout().takeAt(0)
-                    if layoutWidget:
-                        widget.layout().removeItem(layoutWidget)
-                        layoutWidget.widget().deleteLater()
+            if trackWidget is None:
+                print("Track widget not found:", trackName)
+                return
 
-                    widget.setLayout(layout)
-                    break
+            # Get the track widget's layout
+            layout = trackWidget.layout()
+
+            # Iterate over the items in the layout
+            for i in range(layout.count()):
+                item = layout.itemAt(i)
+                if isinstance(item.widget(), TrackWidget):
+                    # Access the TrackWidget instance
+                    trackWidgetInstance = item.widget()
+                    # Update the track graphic within the TrackWidget
+                    trackWidgetInstance.updateTrack(data)
+
         except Exception as e:
             print("Failed to update track:", e)
 
