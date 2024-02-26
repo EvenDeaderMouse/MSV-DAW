@@ -438,8 +438,8 @@ class Ui_MainWindow(object):
     def getAllEffectVal(self):
         effectVals = {}
         effectVals.update({"reverb": self.getReverbVal()})
-        # effectVals.update({"distortion": self.getDistortionVal()})
-        # effectVals.update({"delay": self.getDelayVal()})
+        effectVals.update({"distortion": self.getDistortionVal()})
+        effectVals.update({"delay": self.getDelayVal()})
         return effectVals
 
     def getReverbVal(self):

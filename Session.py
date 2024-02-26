@@ -105,7 +105,7 @@ class Session(object):
         if self.activeOutput is not None and self.activeInput is not None and self.inputCHANNELS is not None:
             if self.STATE != States.RECORDING:
                 self.setSTATE(States.RECORDING)
-                recording = Thread(target=self.record, args=[self.ui.createNewTrack(),], daemon=True)
+                recording = Thread(target=self.record, args=[self.ui.createNewTrack(), ], daemon=True)
                 if not self.ui.getSoloVal():
                     play_stream = Thread(target=self.play_buttonpress, daemon=True)
                     play_stream.start()
@@ -138,14 +138,15 @@ class Session(object):
 
         dataqueue = Queue()
         _queueEnd = object()
-        Thread(target=self.processStream, args=[dataqueue, _queueEnd, trackName ]).start()
+        Thread(target=self.processStream, args=[dataqueue, _queueEnd, trackName]).start()
         while self.getSTATE() != States.PAUSED:
             new_data = stream.read(self.CHUNK_SIZE)
             dataqueue.put(new_data)
 
         dataqueue.put(_queueEnd)
         print("End put")
-        dataqueue.join()
+        while not dataqueue.empty():
+            pass    # i tried dataqueue.join() but for some reason it breakes the code and just stops at the same line
 
         print("* end recording")
         self.setSTATE(States.PAUSED)
@@ -156,22 +157,27 @@ class Session(object):
     def processStream(self, dataqueue: Queue, _queueEnd, newTrackName):
         tempFile = []
         buffer = np.empty([0, 1], dtype=np.int16)
-        data = dataqueue.get()
-        while data is not _queueEnd:
-            data = np.frombuffer(data, dtype=np.int16)
-            data = self.applyEffects(data)
-            buffer = EffectUtil.addWaves(buffer, [data, ])
 
-            data = buffer[:self.CHUNK_SIZE]
-            buffer = buffer[self.CHUNK_SIZE:]
-
-            tempFile.append(data.astype(dtype=np.int16).tobytes())
-            Thread(target=self.passTrackImageData, args=[newTrackName, data ]).start()
-
+        while True:
             data = dataqueue.get()
+            if data != _queueEnd:
+                data = np.frombuffer(data, dtype=np.int16)
+                data = self.applyEffects(data)
+                buffer = EffectUtil.addWaves(buffer, [data, ])
+
+                data = buffer[:self.CHUNK_SIZE]
+                buffer = buffer[self.CHUNK_SIZE:]
+
+                tempFile.append(data.astype(dtype=np.int16).tobytes())
+                Thread(target=self.passTrackImageData, args=[newTrackName, data]).start()
+                #print("Still printing")
+            else:
+                break
 
         if len(buffer) > 0:
             tempFile.append(buffer.astype(dtype=np.int16).tobytes())
+
+        dataqueue.task_done()
 
         WAVE_OUTPUT_TEMP_FILENAME = str(datetime.now()).replace(":", "-") + ".wav"
         wf = wave.open(WAVE_OUTPUT_TEMP_FILENAME, 'wb')
@@ -180,9 +186,7 @@ class Session(object):
         wf.setframerate(self.SAMPLE_RATE)
         wf.writeframes(b''.join(tempFile))
         wf.close()
-        self.tempFilePointerDict.update(
-            {newTrackName: WAVE_OUTPUT_TEMP_FILENAME})
-        dataqueue.task_done()
+        self.tempFilePointerDict.update({newTrackName: WAVE_OUTPUT_TEMP_FILENAME})
 
     def applyEffects(self, data):
         for effect in self.effects:
@@ -206,7 +210,7 @@ class Session(object):
         return data
 
     def passTrackImageData(self, trackName, imageData):
-        self.ui.updateTrack(trackName, imageData)
+        pass  # self.ui.updateTrack(trackName, imageData)
 
     def deleteTrack(self, trackName):
         try:
