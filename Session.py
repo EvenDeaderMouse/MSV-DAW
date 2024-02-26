@@ -36,7 +36,6 @@ class Session(object):
         self.BPM: int = 60
         self.ui = ui
         self.effects: dict = {}
-        self.temptrack = 0  # Testing; delete
 
     def getInputDevices(self):
         inputDevices = {}
@@ -209,11 +208,11 @@ class Session(object):
         return data
 
     def passTrackImageData(self, trackName, imageData):
-        self.ui.updateTrack(trackName, imageData)
+        Thread(target=self.ui.updateTrack, args=[trackName, imageData,])
 
     def deleteTrack(self, trackName):
         try:
-            del self.tempFilePointerDict[trackNum]
+            del self.tempFilePointerDict[trackName]
         except KeyError:
             pass
 

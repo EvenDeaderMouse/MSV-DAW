@@ -1,12 +1,12 @@
 from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton
 from PyQt5.QtCore import QObject, pyqtSlot
 
-
 # Importieren Sie Ihre GUI-Klasse aus der generierten Datei
 from DAW import Ui_MainWindow
 
 # Importieren Sie Ihre Session-Klasse
 from Session import Session
+
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -19,24 +19,11 @@ class MainWindow(QMainWindow):
         # Init Session
         self.session = Session(self.ui, chunk_size=512, sample_rate=48000)  # connects Backend
         self.ui.setInputDeviceDict(self.session.getInputDevices()['InputDevices'])  # list of all input devices
-        self.ui.setOutputDeviceDict(outputDevices = self.session.getOutputDevices()['OutputDevices']) # list of all output devices
+        self.ui.setOutputDeviceDict(
+            outputDevices=self.session.getOutputDevices()['OutputDevices'])  # list of all output devices
         self.ui.recordButton.clicked.connect(self.session.record_buttonpress)
         self.ui.stopButton.clicked.connect(self.session.stop_buttonpress)
         self.ui.playButton.clicked.connect(self.session.play_buttonpress)
-
-        # Verbindung der Schaltflächen mit Methoden
-        self.ui.recordButton.clicked.connect(self.startRecording)
-        self.ui.stopButton.clicked.connect(self.stopRecording)
-        self.ui.playButton.clicked.connect(self.playRecording)
-
-    def startRecording(self):
-       self.session.record_buttonpress()
-
-    def stopRecording(self):
-        self.session.stop_buttonpress()
-
-    def playRecording(self):
-        self.session.play_buttonpress()
 
 
 if __name__ == "__main__":
