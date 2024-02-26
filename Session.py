@@ -9,6 +9,7 @@ import os
 import EffectUtil
 from enum import Enum
 from threading import Thread
+import matplotlib.pyplot as plt
 
 
 # from DAW import Ui_MainWindow
@@ -90,6 +91,7 @@ class Session(object):
         while len(data := wave_Read.readframes(self.CHUNK_SIZE)):
             stream.write(data, self.CHUNK_SIZE)
 
+
         print("* end playback")
         self.setSTATE(States.PAUSED)
 
@@ -100,6 +102,8 @@ class Session(object):
     def stop_buttonpress(self):
         print("DAW stopped")
         self.setSTATE(States.PAUSED)
+        # Stop playback
+
 
     def record_buttonpress(self):  # effect arg or ui abfrage
         if self.activeOutput is not None and self.activeInput is not None and self.inputCHANNELS is not None:
@@ -157,20 +161,45 @@ class Session(object):
     def processStream(self, dataqueue: Queue, _queueEnd, newTrackName):
         tempFile = []
         buffer = np.empty([0, 1], dtype=np.int16)
+        interval = 2  # Snapshot interval in seconds
+        samples_per_interval = int(self.SAMPLE_RATE * interval / self.CHUNK_SIZE)
+
+        snapshot_counter = 0
+        snapshot_data = []
 
         while True:
             data = dataqueue.get()
             if data != _queueEnd:
                 data = np.frombuffer(data, dtype=np.int16)
                 data = self.applyEffects(data)
-                buffer = EffectUtil.addWaves(buffer, [data, ])
 
-                data = buffer[:self.CHUNK_SIZE]
-                buffer = buffer[self.CHUNK_SIZE:]
+                # Reshape data to have the same shape as buffer
+                data = data.reshape(-1, 1)
 
-                tempFile.append(data.astype(dtype=np.int16).tobytes())
-                Thread(target=self.passTrackImageData, args=[newTrackName, data]).start()
-                #print("Still printing")
+                buffer = np.concatenate([buffer, data])
+
+                # Check if enough samples are collected for a snapshot
+                if len(buffer) >= samples_per_interval:
+                    snapshot_data.append(np.mean(buffer[:samples_per_interval]))  # Take the mean of the samples
+                    buffer = buffer[samples_per_interval:]  # Remove processed samples from buffer
+                    snapshot_counter += 1
+
+                # Check if it's time to create a snapshot
+                if snapshot_counter == samples_per_interval:
+                    # Convert snapshot data to image
+                    plt.plot(snapshot_data)  # Example: Plotting the snapshot data
+                    plt.xlabel('Time')
+                    plt.ylabel('Amplitude')
+                    plt.title('Audio Snapshot')
+                    image_data = f'{newTrackName}_snapshot.png'
+                    plt.savefig(image_data)  # Save the image
+                    plt.close()  # Close the plot
+                    snapshot_counter = 0  # Reset the snapshot counter
+                    snapshot_data = []  # Clear snapshot data
+
+                    # You can pass the image data to UI for display if needed
+                    self.ui.updateTrack(newTrackName, image_data)
+
             else:
                 break
 
@@ -210,7 +239,7 @@ class Session(object):
         return data
 
     def passTrackImageData(self, trackName, imageData):
-        pass  # self.ui.updateTrack(trackName, imageData)
+        pass #self.ui.updateTrack(trackName, imageData)
 
     def deleteTrack(self, trackName):
         try:

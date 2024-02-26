@@ -44,19 +44,17 @@ class TrackWidget(QtWidgets.QWidget):
         else:
             print("TrackGraphic instance not found.")
 
-class TrackGraphic(pg.GraphicsLayoutWidget):
+class TrackGraphic(pg.PlotWidget):
     def __init__(self, parent=None):
-        super().__init__(parent)
-        self.plot_item = self.addPlot(title="Track Graphic")
-        self.curve = self.plot_item.plot(pen='y')
+            super().__init__(parent)
+            self.curve = self.plot(pen='y')
 
     def update_plot(self, data):
-        if isinstance(data, np.ndarray):
-            # Ensure data is a numpy array
-            self.curve.setData(data)
-        else:
-            print("Invalid data format. Expected numpy array.")
-
+            if isinstance(data, np.ndarray):
+                # Ensure data is a numpy array
+                self.curve.setData(data)
+            else:
+                print("Invalid data format. Expected numpy array.")
     def update_image(self, image):
         self.plot_item.clear()
         self.plot_item.setImage(image)

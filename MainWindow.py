@@ -25,6 +25,12 @@ class MainWindow(QMainWindow):
         self.ui.stopButton.clicked.connect(self.session.stop_buttonpress)
         self.ui.playButton.clicked.connect(self.session.play_buttonpress)
 
+        @pyqtSlot()
+        def stop_buttonpress(self):
+            # Stop recording
+            self.stop_recording()
+
+
 
 if __name__ == "__main__":
     import sys
