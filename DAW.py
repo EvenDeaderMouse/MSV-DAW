@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-
+import numpy as np
 # Form implementation generated from reading ui file 'mainPage6.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.10
@@ -10,6 +10,10 @@
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 import matplotlib
+from PyQt5.QtGui import QPixmap, QImage
+from PyQt5.QtWidgets import QVBoxLayout
+from matplotlib import pyplot as plt
+from matplotlib.backends.backend_template import FigureCanvas
 
 
 class TrackWidget(QtWidgets.QWidget):
@@ -22,7 +26,9 @@ class TrackWidget(QtWidgets.QWidget):
         layout = QtWidgets.QVBoxLayout(self)
 
         # Create and add widgets for the track (graphics view, volume slider, label)
-        self.trackGraphic = QtWidgets.QGraphicsView()
+       # self.trackGraphic = QtWidgets.QGraphicsView()
+        self.scene = QtWidgets.QGraphicsScene()
+        self.trackGraphic = QtWidgets.QGraphicsView(self.scene)
         layout.addWidget(self.trackGraphic)
         self.trackLabel = QtWidgets.QLabel(f"Track {self.track_num}")
         self.trackLabel.setAlignment(QtCore.Qt.AlignCenter)  # Align the label text to the center
@@ -296,6 +302,7 @@ class Ui_MainWindow(object):
 
         # Add the new track widget to your UI (e.g., scroll area)
         self.scrollAreaWidgetContents_2.layout().addWidget(new_track_widget)
+        print("Widget added")
 
         # Return the track number or name
         return new_track_widget.objectName()
@@ -355,10 +362,53 @@ class Ui_MainWindow(object):
         return True
 
     def updateTrack(self, trackName, data):
-        #hier bitte aus alten und neuen Daten ein bild erstellen
-        #und dann in die Image box vom Track packen
-        #das wärs
-        print(data) #<--hier deine Daten
+        print("Updating track:", trackName)
+        # print(data)  # <--hier deine Daten
+        try:
+            print("enter try")
+            # Create a figure and a canvas for the plot
+            fig, ax = plt.subplots()
+            ax.imshow(data, interpolation='nearest')
+            ax.set_title(trackName)
+            print("test1")
+
+
+            # Embed the plot in a QWidget
+            canvas = FigureCanvas(fig)
+            canvas.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
+            print(canvas)
+            layout = QVBoxLayout()
+            layout.addWidget(canvas)
+            print("canvas added")
+
+            # Clear previous contents of the trackGraphic
+            trackWidget = self.findTrackWidget(trackName)
+            for widget in trackWidget.findChildren(QtWidgets.QWidget):
+                if isinstance(widget, TrackWidget):
+                    layoutWidget = widget.layout().takeAt(0)
+                    if layoutWidget:
+                        widget.layout().removeItem(layoutWidget)
+                        layoutWidget.widget().deleteLater()
+
+                    widget.setLayout(layout)
+                    break
+        except Exception as e:
+            print("Failed to update track:", e)
+
+    def findTrackWidget(self, trackName):
+        """
+        Find a track widget based on its name.
+
+        Args:
+            trackName (str): The name or identifier of the track widget to find.
+
+        Returns:
+            QWidget or None: The track widget if found, otherwise None.
+        """
+        for trackWidget in self.trackWidgets:
+            if trackWidget.objectName() == trackName:
+                return trackWidget
+        return None
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
