@@ -105,7 +105,7 @@ class Session(object):
         if self.activeOutput is not None and self.activeInput is not None and self.inputCHANNELS is not None:
             if self.STATE != States.RECORDING:
                 self.setSTATE(States.RECORDING)
-                recording = Thread(target=self.record, daemon=True)
+                recording = Thread(target=self.record, args=[self.ui.createNewTrack(),], daemon=True)
                 if not self.ui.getSoloVal():
                     play_stream = Thread(target=self.play_buttonpress, daemon=True)
                     play_stream.start()
@@ -118,9 +118,7 @@ class Session(object):
             # errorhandling
             pass
 
-    def record(self):
-        newTrackName = self.ui.createNewTrack()
-        new_track_num = self.ui.createNewTrack() #dein code
+    def record(self, trackName):
         self.effects = self.ui.getAllEffectVal()
         print("Recording in 3...")
         time.sleep(1 * (60 / self.BPM))
@@ -140,7 +138,7 @@ class Session(object):
 
         dataqueue = Queue()
         _queueEnd = object()
-        Thread(target=self.processStream, args=[dataqueue, _queueEnd, newTrackName ]).start()
+        Thread(target=self.processStream, args=[dataqueue, _queueEnd, trackName ]).start()
         while self.getSTATE() != States.PAUSED:
             new_data = stream.read(self.CHUNK_SIZE)
             dataqueue.put(new_data)
